@@ -150,6 +150,7 @@ export async function POST(req: NextRequest) {
         position: registration.position,
         department: registration.department,
         phone_number: registration.phone_number,
+        province: registration.province,
         car_type: registration.car_type,
         car_color: registration.car_color,
         license_plate_type: registration.license_plate_type,

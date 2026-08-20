@@ -297,6 +297,7 @@ export function AdminTable() {
                   />
                 </th>
                 <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">ทะเบียนรถ</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">จังหวัด</th>
                 <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">ชื่อ-นามสกุล</th>
                 <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Username</th>
                 <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">ตำแหน่ง</th>
@@ -311,7 +312,7 @@ export function AdminTable() {
             <tbody className="divide-y divide-slate-100">
               {loading && (
                 <tr>
-                  <td colSpan={11} className="px-4 py-10 text-center text-slate-400">
+                  <td colSpan={12} className="px-4 py-10 text-center text-slate-400">
                     <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" />
                     กำลังโหลดข้อมูล...
                   </td>
@@ -319,7 +320,7 @@ export function AdminTable() {
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-4 py-10 text-center text-slate-400">
+                  <td colSpan={12} className="px-4 py-10 text-center text-slate-400">
                     ไม่พบข้อมูล
                   </td>
                 </tr>
@@ -343,6 +344,7 @@ export function AdminTable() {
                     <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-slate-900">
                       {row.license_plate}
                     </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">{row.province}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-700">
                       <div>{row.full_name_th}</div>
                       <div className="text-xs text-slate-400">{row.full_name_en}</div>

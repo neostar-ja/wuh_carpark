@@ -11,6 +11,7 @@ import {
   Phone,
   Palette,
   Tag,
+  MapPin,
   Clock,
   Check,
   Trash2,
@@ -110,9 +111,8 @@ export function RegistrationDetailModal({
           <DetailRow icon={Building2} label="หน่วยงาน" value={registration.department} />
           <DetailRow icon={CarFront} label="ประเภทรถ" value={registration.car_type} />
           <DetailRow icon={Palette} label="สีรถ" value={registration.car_color} />
-          <div className="sm:col-span-2">
-            <DetailRow icon={Tag} label="ประเภทป้ายทะเบียน" value={registration.license_plate_type} />
-          </div>
+          <DetailRow icon={Tag} label="ประเภทป้ายทะเบียน" value={registration.license_plate_type} />
+          <DetailRow icon={MapPin} label="จังหวัด" value={registration.province} />
           <div className="sm:col-span-2">
             <DetailRow
               icon={Clock}

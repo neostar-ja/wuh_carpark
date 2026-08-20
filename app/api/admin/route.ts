@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     let query = supabaseAdmin
       .from("car_registrations")
       .select(
-        "id, license_plate, full_name_th, full_name_en, username, position, department, phone_number, car_type, car_color, license_plate_type, status, created_at"
+        "id, license_plate, full_name_th, full_name_en, username, position, department, phone_number, province, car_type, car_color, license_plate_type, status, created_at"
       )
       .order("created_at", { ascending: false });
 

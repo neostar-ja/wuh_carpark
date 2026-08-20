@@ -7,6 +7,7 @@ export type Registration = {
   position: string;
   department: string;
   phone_number: string;
+  province: string;
   car_type: string;
   car_color: string;
   license_plate_type: string;

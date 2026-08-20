@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { THAI_PROVINCES } from "./provinces";
 
 export const CAR_TYPE_OPTIONS = [
   "Small Car",
@@ -22,13 +23,32 @@ export const CAR_COLOR_OPTIONS = [
   "Other",
 ] as const;
 
+// Swatch color shown next to each option in the custom color picker.
+// "Other" gets a striped/gradient swatch since it has no single color.
+export const CAR_COLOR_SWATCHES: Record<(typeof CAR_COLOR_OPTIONS)[number], string> = {
+  White: "#ffffff",
+  Black: "#111111",
+  Silver: "#c0c0c0",
+  Gray: "#6b7280",
+  Red: "#ef4444",
+  Blue: "#3b82f6",
+  Green: "#22c55e",
+  Brown: "#78350f",
+  Gold: "#d4af37",
+  Orange: "#f97316",
+  Yellow: "#eab308",
+  Other: "conic-gradient(#ef4444,#f97316,#eab308,#22c55e,#3b82f6,#8b5cf6,#ef4444)",
+};
+
 export const LICENSE_PLATE_TYPE_OPTIONS = [
-  "ป้ายขาว-ดำ (รถยนต์ส่วนบุคคล)",
-  "ป้ายเขียว (รถขนส่ง)",
-  "ป้ายเหลือง (รถสาธารณะ)",
-  "ป้ายแดง (รถใหม่ยังไม่จดทะเบียน)",
+  "ป้ายขาว-ดำ",
+  "ป้ายเขียว",
+  "ป้ายเหลือง",
+  "ป้ายแดง",
   "อื่นๆ",
 ] as const;
+
+export const PROVINCE_OPTIONS = THAI_PROVINCES;
 
 const LICENSE_PLATE_REGEX = /^[ก-ฮ]{1,3}[0-9]{1,4}$/;
 const FULL_NAME_EN_REGEX = /^[A-Za-z\s]+$/;
@@ -76,6 +96,9 @@ export const registrationSchema = z.object({
     .refine((val) => PHONE_REGEX.test(val), {
       message: "เบอร์โทรศัพท์ต้องเป็นตัวเลข 10 หลัก ขึ้นต้นด้วย 0",
     }),
+  province: z.enum(PROVINCE_OPTIONS, {
+    errorMap: () => ({ message: "กรุณาเลือกจังหวัด" }),
+  }),
   car_type: z.enum(CAR_TYPE_OPTIONS, {
     errorMap: () => ({ message: "กรุณาเลือกประเภทรถ" }),
   }),

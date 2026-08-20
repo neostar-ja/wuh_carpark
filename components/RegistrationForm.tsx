@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   IdCard,
@@ -11,8 +11,8 @@ import {
   Building2,
   Phone,
   CarFront,
-  Palette,
   Tag,
+  MapPin,
   ShieldCheck,
   Loader2,
   UserCircle2,
@@ -23,11 +23,12 @@ import {
   registrationSchema,
   RegistrationInput,
   CAR_TYPE_OPTIONS,
-  CAR_COLOR_OPTIONS,
   LICENSE_PLATE_TYPE_OPTIONS,
+  PROVINCE_OPTIONS,
 } from "@/lib/validation";
 import { TurnstileWidget } from "./TurnstileWidget";
 import { RegistrationSuccessCard } from "./RegistrationSuccessCard";
+import { ColorSelect } from "./ColorSelect";
 
 const CONSENT_TEXT =
   "ข้าพเจ้ายินยอมให้หน่วยงานเก็บและใช้ข้อมูลข้างต้นเพื่อวัตถุประสงค์การควบคุมพื้นที่จอดรถ";
@@ -100,6 +101,7 @@ export function RegistrationForm() {
     clearErrors,
     reset,
     watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RegistrationInput>({
     resolver: zodResolver(registrationSchema),
@@ -110,6 +112,8 @@ export function RegistrationForm() {
       position: "",
       department: "",
       phone_number: "",
+      province: undefined,
+      car_color: undefined,
       consent: false,
     },
   });
@@ -355,6 +359,26 @@ export function RegistrationForm() {
           </div>
 
           <div>
+            <label htmlFor="province" className={labelClass}>
+              จังหวัด <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <FieldIcon icon={MapPin} />
+              <select id="province" defaultValue="" className={selectClass} {...register("province")}>
+                <option value="" disabled>
+                  -- เลือกจังหวัด --
+                </option>
+                {PROVINCE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {errors.province && <p className={errorClass}>{errors.province.message}</p>}
+          </div>
+
+          <div>
             <label htmlFor="car_type" className={labelClass}>
               ประเภทรถ <span className="text-red-500">*</span>
             </label>
@@ -378,19 +402,18 @@ export function RegistrationForm() {
             <label htmlFor="car_color" className={labelClass}>
               สีรถ <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <FieldIcon icon={Palette} />
-              <select id="car_color" defaultValue="" className={selectClass} {...register("car_color")}>
-                <option value="" disabled>
-                  -- เลือกสีรถ --
-                </option>
-                {CAR_COLOR_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Controller
+              name="car_color"
+              control={control}
+              render={({ field }) => (
+                <ColorSelect
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  hasError={Boolean(errors.car_color)}
+                />
+              )}
+            />
             {errors.car_color && <p className={errorClass}>{errors.car_color.message}</p>}
           </div>
 

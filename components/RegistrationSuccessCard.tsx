@@ -11,6 +11,7 @@ import {
   Phone,
   Palette,
   Tag,
+  MapPin,
   Clock,
   RotateCcw,
 } from "lucide-react";
@@ -25,6 +26,16 @@ type Props = {
 const HOSPITAL_NAME_TH = "โรงพยาบาลศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์";
 const HOSPITAL_NAME_EN = "Walailak University Hospital";
 
+// html2canvas has known trouble measuring combining Thai vowel/tone marks
+// when the page's self-hosted webfont (IBM Plex Sans Thai) is in play —
+// the marks get clipped in the rendered PNG even though the live page looks
+// fine. Tahoma is a long-standing, universally cached system font with
+// solid Thai shaping support, so the captured card forces it instead of
+// inheriting the site's branded font — a deliberate trade-off of a little
+// brand consistency for a save-image feature that actually works.
+const SAFE_THAI_FONT_STACK =
+  "Tahoma, 'Leelawadee UI', 'Noto Sans Thai', 'Segoe UI', Arial, sans-serif";
+
 function DetailRow({
   icon: Icon,
   label,
@@ -36,10 +47,12 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-start gap-2.5">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-wuh-600" />
-      <div className="min-w-0">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
-        <p className="truncate text-sm font-medium text-slate-800">{value}</p>
+      <Icon className="mt-1 h-4 w-4 shrink-0 text-wuh-600" />
+      <div className="min-w-0 py-0.5">
+        <p className="text-[11px] font-medium uppercase leading-[1.8] tracking-wide text-slate-400">
+          {label}
+        </p>
+        <p className="truncate text-sm font-medium leading-[1.8] text-slate-800">{value}</p>
       </div>
     </div>
   );
@@ -95,20 +108,22 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
         </p>
       </div>
 
-      {/* This card is intentionally kept light-mode-only (fixed white
-          background) since it doubles as a printable/savable pass image —
-          it should render the same regardless of the viewer's OS theme. */}
+      {/* Intentionally kept light-mode-only and pinned to a safe system font
+          (see SAFE_THAI_FONT_STACK) since this doubles as a printable/savable
+          pass image — it should render identically regardless of the
+          viewer's OS theme or which webfonts happen to be loaded. */}
       <div
         ref={cardRef}
+        style={{ fontFamily: SAFE_THAI_FONT_STACK }}
         className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card"
       >
-        <div className="relative overflow-hidden bg-gradient-to-br from-wuh-700 via-wuh-800 to-accent-600 px-5 py-4 text-white">
+        <div className="relative overflow-hidden bg-gradient-to-br from-wuh-700 via-wuh-800 to-accent-600 px-5 py-5 text-white">
           <div className="pointer-events-none absolute -right-6 -top-10 h-32 w-32 rounded-full bg-white/10" />
           <div className="pointer-events-none absolute -bottom-10 -left-4 h-24 w-24 rounded-full bg-white/10" />
           <div className="relative flex items-center justify-between gap-3">
             <div className="min-w-0 py-0.5">
-              <p className="truncate text-[13px] font-semibold leading-[1.8]">{HOSPITAL_NAME_TH}</p>
-              <p className="truncate text-[11px] leading-[1.8] text-wuh-100/80">{HOSPITAL_NAME_EN}</p>
+              <p className="truncate text-[13px] font-semibold leading-[2]">{HOSPITAL_NAME_TH}</p>
+              <p className="truncate text-[11px] leading-[2] text-wuh-100/80">{HOSPITAL_NAME_EN}</p>
             </div>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15">
               <CarFront className="h-5 w-5" />
@@ -116,14 +131,20 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-b border-dashed border-slate-200 bg-wuh-50 px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-dashed border-slate-200 bg-wuh-50 px-5 py-5">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-wuh-700">ทะเบียนรถ</p>
+            <p className="text-[11px] font-medium uppercase leading-[1.8] tracking-wide text-wuh-700">
+              ทะเบียนรถ
+            </p>
             <p className="text-3xl font-bold leading-normal tracking-[0.12em] text-wuh-950">
               {data.license_plate}
             </p>
+            <p className="mt-0.5 flex items-center gap-1 text-xs leading-[1.8] text-wuh-700/80">
+              <MapPin className="h-3 w-3" />
+              {data.province}
+            </p>
           </div>
-          <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+          <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold leading-[1.8] text-amber-700">
             รอดำเนินการ
           </span>
         </div>
@@ -141,12 +162,12 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-dashed border-slate-200 px-5 py-3">
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+        <div className="flex items-center justify-between gap-3 border-t border-dashed border-slate-200 px-5 py-4">
+          <div className="flex items-center gap-1.5 text-[11px] leading-[1.8] text-slate-400">
             <Clock className="h-3.5 w-3.5" />
             {submittedAt}
           </div>
-          <p className="font-mono text-[11px] text-slate-400">{referenceId.slice(0, 8)}</p>
+          <p className="font-mono text-[11px] leading-[1.8] text-slate-400">{referenceId.slice(0, 8)}</p>
         </div>
       </div>
 
