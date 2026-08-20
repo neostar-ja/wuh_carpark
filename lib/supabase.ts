@@ -30,6 +30,17 @@ function getClient(): SupabaseClient {
       autoRefreshToken: false,
       persistSession: false,
     },
+    global: {
+      // Next.js patches the global fetch() to add its own Data Cache layer,
+      // and that patch reaches into supabase-js's internal fetch calls too —
+      // separate from (and invisible to) Vercel's edge/CDN cache. A route
+      // being marked force-dynamic controls whether *that route* is
+      // prerendered, but isn't reliably enough to stop this from silently
+      // caching a stale Supabase read (e.g. an admin approval not showing up
+      // on the public status-check page afterwards). Force every Supabase
+      // request to bypass it outright.
+      fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+    },
   });
   return client;
 }
