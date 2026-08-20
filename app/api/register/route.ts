@@ -1,13 +1,64 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase";
-import { registrationApiSchema } from "@/lib/validation";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { registrationApiSchema, licensePlateCheckSchema } from "@/lib/validation";
+import { checkRateLimit, checkLookupRateLimit, getClientIp } from "@/lib/rate-limit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const requestSchema = registrationApiSchema.extend({
   turnstileToken: z.string().optional(),
 });
+
+// GET /api/register?plate=XXXX — real-time duplicate check while the user is
+// still typing, so they find out a plate is taken before fighting through
+// the anti-bot check and consent box. Deliberately does NOT require
+// Turnstile (it only ever returns a boolean, nothing sensitive), just a
+// looser rate limit to blunt plate-enumeration abuse.
+export async function GET(req: NextRequest) {
+  try {
+    const ip = getClientIp(req.headers);
+    const { allowed } = checkLookupRateLimit(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: "ตรวจสอบถี่เกินไป กรุณาลองใหม่อีกครั้งภายหลัง" },
+        { status: 429 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const parsed = licensePlateCheckSchema.safeParse({
+      license_plate: searchParams.get("plate") ?? "",
+    });
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: "รูปแบบทะเบียนไม่ถูกต้อง" },
+        { status: 400 }
+      );
+    }
+
+    const { data: existing, error } = await supabaseAdmin
+      .from("car_registrations")
+      .select("id")
+      .eq("license_plate", parsed.data.license_plate)
+      .maybeSingle();
+
+    if (error) {
+      return NextResponse.json(
+        { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, exists: Boolean(existing) });
+  } catch (err) {
+    console.error("GET /api/register failed:", err);
+    return NextResponse.json(
+      { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,14 +99,9 @@ export async function POST(req: NextRequest) {
 
     const { turnstileToken, ...registration } = parsed.data;
 
-    const turnstileOk = await verifyTurnstileToken(turnstileToken, ip);
-    if (!turnstileOk) {
-      return NextResponse.json(
-        { success: false, error: "การยืนยันตัวตน (anti-bot) ไม่สำเร็จ กรุณาลองใหม่" },
-        { status: 400 }
-      );
-    }
-
+    // Check for a duplicate plate before spending a Turnstile verification
+    // call, so a resubmitted duplicate always surfaces the accurate "already
+    // registered" message instead of a stale/expired anti-bot error.
     const { data: existing, error: lookupError } = await supabaseAdmin
       .from("car_registrations")
       .select("id")
@@ -73,6 +119,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: "ทะเบียนนี้ลงทะเบียนแล้ว" },
         { status: 409 }
+      );
+    }
+
+    const turnstileOk = await verifyTurnstileToken(turnstileToken, ip);
+    if (!turnstileOk) {
+      return NextResponse.json(
+        { success: false, error: "การยืนยันตัวตน (anti-bot) ไม่สำเร็จ กรุณาลองใหม่" },
+        { status: 400 }
       );
     }
 

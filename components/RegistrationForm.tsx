@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -17,6 +17,7 @@ import {
   Loader2,
   UserCircle2,
   ClipboardCheck,
+  CheckCircle2,
 } from "lucide-react";
 import {
   registrationSchema,
@@ -31,11 +32,15 @@ import { RegistrationSuccessCard } from "./RegistrationSuccessCard";
 const CONSENT_TEXT =
   "ข้าพเจ้ายินยอมให้หน่วยงานเก็บและใช้ข้อมูลข้างต้นเพื่อวัตถุประสงค์การควบคุมพื้นที่จอดรถ";
 
+const PLATE_FORMAT_REGEX = /^[ก-ฮ]{1,3}[0-9]{1,4}$/;
+
 type SubmitState =
   | { status: "idle" }
   | { status: "submitting" }
   | { status: "success"; referenceId: string; data: RegistrationInput }
   | { status: "error"; message: string };
+
+type PlateCheckState = "idle" | "checking" | "available" | "taken" | "error";
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-base text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100";
@@ -53,37 +58,48 @@ function FieldIcon({ icon: Icon }: { icon: React.ComponentType<{ className?: str
 }
 
 function SectionHeader({
+  step,
   icon: Icon,
   title,
   subtitle,
 }: {
+  step: number;
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   subtitle: string;
 }) {
   return (
-    <div className="mb-4 flex items-center gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-wuh-100 text-wuh-700">
-        <Icon className="h-[18px] w-[18px]" />
+    <div className="mb-5 flex items-center gap-3">
+      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-wuh-600 to-accent-500 text-white shadow-sm">
+        <Icon className="h-5 w-5" />
+        <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-wuh-900 text-[10px] font-bold">
+          {step}
+        </span>
       </div>
       <div>
-        <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
         <p className="text-xs text-slate-400">{subtitle}</p>
       </div>
     </div>
   );
 }
 
+const sectionCardClass =
+  "animate-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6";
+
 export function RegistrationForm() {
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
   const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [turnstileError, setTurnstileError] = useState<string>("");
+  const [plateCheck, setPlateCheck] = useState<PlateCheckState>("idle");
 
   const {
     register,
     handleSubmit,
     setError,
+    clearErrors,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegistrationInput>({
     resolver: zodResolver(registrationSchema),
@@ -97,6 +113,44 @@ export function RegistrationForm() {
       consent: false,
     },
   });
+
+  const licensePlateValue = watch("license_plate");
+
+  // Real-time duplicate check while typing, so a taken plate shows up before
+  // the user ever reaches the anti-bot / submit step.
+  useEffect(() => {
+    const value = (licensePlateValue ?? "").replace(/\s+/g, "");
+
+    if (!PLATE_FORMAT_REGEX.test(value)) {
+      setPlateCheck("idle");
+      return;
+    }
+
+    setPlateCheck("checking");
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/register?plate=${encodeURIComponent(value)}`);
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          setPlateCheck("error");
+          return;
+        }
+
+        if (data.exists) {
+          setPlateCheck("taken");
+          setError("license_plate", { type: "manual", message: "ทะเบียนนี้ลงทะเบียนแล้ว" });
+        } else {
+          setPlateCheck("available");
+          clearErrors("license_plate");
+        }
+      } catch {
+        setPlateCheck("error");
+      }
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [licensePlateValue, setError, clearErrors]);
 
   const onSubmit = async (values: RegistrationInput) => {
     setTurnstileError("");
@@ -118,6 +172,7 @@ export function RegistrationForm() {
       const data = await res.json();
 
       if (res.status === 409) {
+        setPlateCheck("taken");
         setError("license_plate", { message: data.error ?? "ทะเบียนนี้ลงทะเบียนแล้ว" });
         setSubmitState({ status: "idle" });
         return;
@@ -148,6 +203,7 @@ export function RegistrationForm() {
         data={submitState.data}
         onReset={() => {
           reset();
+          setPlateCheck("idle");
           setSubmitState({ status: "idle" });
         }}
       />
@@ -155,14 +211,10 @@ export function RegistrationForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="mx-auto w-full max-w-md animate-fade-in space-y-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-7"
-      noValidate
-    >
-      {/* Section: ข้อมูลผู้ลงทะเบียน */}
-      <section>
-        <SectionHeader icon={UserCircle2} title="ข้อมูลผู้ลงทะเบียน" subtitle="ข้อมูลส่วนตัวและหน่วยงาน" />
+    <form onSubmit={handleSubmit(onSubmit)} className="mx-auto w-full max-w-md space-y-5" noValidate>
+      {/* Section 1: ข้อมูลผู้ลงทะเบียน */}
+      <section className={sectionCardClass}>
+        <SectionHeader step={1} icon={UserCircle2} title="ข้อมูลผู้ลงทะเบียน" subtitle="ข้อมูลส่วนตัวและหน่วยงาน" />
         <div className="space-y-5">
           <div>
             <label htmlFor="full_name_th" className={labelClass}>
@@ -259,11 +311,9 @@ export function RegistrationForm() {
         </div>
       </section>
 
-      <div className="border-t border-dashed border-slate-200" />
-
-      {/* Section: ข้อมูลรถยนต์ */}
-      <section>
-        <SectionHeader icon={CarFront} title="ข้อมูลรถยนต์" subtitle="ทะเบียนและรายละเอียดรถ" />
+      {/* Section 2: ข้อมูลรถยนต์ */}
+      <section className={sectionCardClass}>
+        <SectionHeader step={2} icon={CarFront} title="ข้อมูลรถยนต์" subtitle="ทะเบียนและรายละเอียดรถ" />
         <div className="space-y-5">
           <div>
             <label htmlFor="license_plate" className={labelClass}>
@@ -283,8 +333,25 @@ export function RegistrationForm() {
                   },
                 })}
               />
+              {plateCheck === "checking" && (
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                </span>
+              )}
+              {plateCheck === "available" && !errors.license_plate && (
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
+                  <CheckCircle2 className="h-[18px] w-[18px]" />
+                </span>
+              )}
             </div>
-            {errors.license_plate && <p className={errorClass}>{errors.license_plate.message}</p>}
+            {errors.license_plate ? (
+              <p className={errorClass}>{errors.license_plate.message}</p>
+            ) : plateCheck === "available" ? (
+              <p className="mt-1.5 flex items-center gap-1 text-sm text-emerald-600">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                ทะเบียนนี้ยังไม่ถูกใช้งาน
+              </p>
+            ) : null}
           </div>
 
           <div>
@@ -356,11 +423,9 @@ export function RegistrationForm() {
         </div>
       </section>
 
-      <div className="border-t border-dashed border-slate-200" />
-
-      {/* Section: ยืนยันการลงทะเบียน */}
-      <section>
-        <SectionHeader icon={ClipboardCheck} title="ยืนยันการลงทะเบียน" subtitle="ตรวจสอบและยืนยันความยินยอม" />
+      {/* Section 3: ยืนยันการลงทะเบียน */}
+      <section className={sectionCardClass}>
+        <SectionHeader step={3} icon={ClipboardCheck} title="ยืนยันการลงทะเบียน" subtitle="ตรวจสอบและยืนยันความยินยอม" />
         <div className="space-y-4">
           <label
             htmlFor="consent"
@@ -372,9 +437,7 @@ export function RegistrationForm() {
               className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-wuh-700 focus:ring-wuh-500"
               {...register("consent")}
             />
-            <span className="text-sm leading-relaxed text-slate-600">
-              {CONSENT_TEXT}
-            </span>
+            <span className="text-sm leading-relaxed text-slate-600">{CONSENT_TEXT}</span>
           </label>
           {errors.consent && <p className={errorClass}>{errors.consent.message}</p>}
 

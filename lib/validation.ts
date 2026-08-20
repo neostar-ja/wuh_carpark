@@ -92,6 +92,9 @@ export const registrationSchema = z.object({
 
 export type RegistrationInput = z.infer<typeof registrationSchema>;
 
+// Standalone schema for the license-plate-only duplicate-check endpoint.
+export const licensePlateCheckSchema = registrationSchema.pick({ license_plate: true });
+
 // Schema for the payload actually sent to the API (client strips consent-only UI concerns off nothing;
 // consent is still required server-side to mirror client validation exactly).
 export const registrationApiSchema = registrationSchema;
