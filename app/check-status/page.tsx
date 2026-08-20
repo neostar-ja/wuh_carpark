@@ -19,31 +19,22 @@ export default function CheckStatusPage() {
         <div className="pointer-events-none absolute -right-10 top-16 h-56 w-56 rounded-full bg-accent-300/25 blur-2xl" />
         <div className="pointer-events-none absolute bottom-0 left-1/2 h-40 w-72 -translate-x-1/2 rounded-full bg-wuh-400/20 blur-3xl" />
 
-        <div className="relative mx-auto max-w-md">
-          <Link
-            href="/"
-            className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-white/80 transition hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            กลับหน้าแรก
-          </Link>
-          <div className="text-center text-white">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 shadow-lg shadow-black/10 ring-1 ring-white/20 backdrop-blur-sm">
-              <Search className="h-8 w-8" strokeWidth={2} />
-            </div>
-            <p className="mb-1.5 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/85">
-              <Sparkles className="h-3.5 w-3.5" />
-              ตรวจสอบผลการลงทะเบียน
-            </p>
-            <h1 className="text-2xl font-bold leading-snug sm:text-[28px]">
-              ตรวจสอบสถานะ
-              <br />
-              การลงทะเบียนรถ
-            </h1>
-            <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-white/80">
-              กรอกทะเบียนรถและเบอร์โทรศัพท์ที่ใช้ลงทะเบียน เพื่อตรวจสอบสถานะล่าสุด
-            </p>
+        <div className="relative mx-auto max-w-md text-center text-white">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 shadow-lg shadow-black/10 ring-1 ring-white/20 backdrop-blur-sm">
+            <Search className="h-8 w-8" strokeWidth={2} />
           </div>
+          <p className="mb-1.5 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/85">
+            <Sparkles className="h-3.5 w-3.5" />
+            ตรวจสอบผลการลงทะเบียน
+          </p>
+          <h1 className="text-2xl font-bold leading-snug sm:text-[28px]">
+            ตรวจสอบสถานะ
+            <br />
+            การลงทะเบียนรถ
+          </h1>
+          <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-white/80">
+            กรอกทะเบียนรถและเบอร์โทรศัพท์ที่ใช้ลงทะเบียน เพื่อตรวจสอบสถานะล่าสุด
+          </p>
         </div>
       </div>
 
@@ -60,6 +51,15 @@ export default function CheckStatusPage() {
       </svg>
 
       <div className="relative -mt-10 px-4 pb-8 sm:-mt-14">
+        <div className="mx-auto mb-4 w-full max-w-md">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-wuh-200 hover:text-wuh-700 hover:shadow-card"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            กลับหน้าแรก
+          </Link>
+        </div>
         <CheckStatusForm />
       </div>
 

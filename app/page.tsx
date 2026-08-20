@@ -1,15 +1,8 @@
 import Link from "next/link";
-import { CarFront, Search, ShieldCheck, Sparkles, ArrowRight } from "lucide-react";
+import { CarFront, Search, ShieldCheck, Sparkles, ArrowRight, ArrowUpRight } from "lucide-react";
 import { Footer } from "@/components/Footer";
 
-const SHORTCUTS = [
-  {
-    href: "/register",
-    icon: CarFront,
-    title: "ลงทะเบียนรถ",
-    description: "กรอกข้อมูลเพื่อลงทะเบียนรถเข้าพื้นที่จอดรถของโรงพยาบาล",
-    accent: "from-wuh-600 to-wuh-800",
-  },
+const SECONDARY_SHORTCUTS = [
   {
     href: "/check-status",
     icon: Search,
@@ -46,17 +39,22 @@ export default function Home() {
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 shadow-lg shadow-black/10 ring-1 ring-white/20 backdrop-blur-sm">
             <CarFront className="h-8 w-8" strokeWidth={2} />
           </div>
-          <p className="mb-1.5 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/85">
-            <Sparkles className="h-3.5 w-3.5" />
-            ระบบลงทะเบียนที่จอดรถ
-          </p>
+          <div className="mb-3 flex flex-col items-center gap-1.5">
+            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/85">
+              <Sparkles className="h-3.5 w-3.5" />
+              ระบบลงทะเบียนที่จอดรถ
+            </p>
+            <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70 ring-1 ring-white/20">
+              Parking Registration System
+            </span>
+          </div>
           <h1 className="text-3xl font-bold leading-snug sm:text-4xl">
             โรงพยาบาลศูนย์การแพทย์
             <br />
             มหาวิทยาลัยวลัยลักษณ์
           </h1>
           <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/80 sm:text-base">
-            ระบบลงทะเบียนและตรวจสอบสิทธิ์เข้าพื้นที่จอดรถ สำหรับบุคลากรและผู้มาติดต่อ
+            ระบบลงทะเบียนและตรวจสอบสิทธิ์เข้าพื้นที่จอดรถ
           </p>
         </div>
       </div>
@@ -74,26 +72,47 @@ export default function Home() {
       </svg>
 
       <div className="relative -mt-12 px-4 pb-12 sm:-mt-16">
-        <div className="mx-auto grid w-full max-w-4xl gap-4 sm:grid-cols-3">
-          {SHORTCUTS.map(({ href, icon: Icon, title, description, accent }) => (
-            <Link
-              key={href}
-              href={href}
-              className="group flex animate-fade-in flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-card transition hover:-translate-y-1 hover:shadow-card-hover"
-            >
-              <div
-                className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-white shadow-sm`}
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+          {/* Row 1: primary action, full width */}
+          <Link
+            href="/register"
+            className="group relative flex animate-fade-in items-center gap-5 overflow-hidden rounded-2xl bg-gradient-to-br from-wuh-700 via-wuh-800 to-accent-600 p-7 text-white shadow-card transition hover:-translate-y-1 hover:shadow-card-hover sm:p-8"
+          >
+            <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-12 left-1/3 h-32 w-32 rounded-full bg-accent-300/20 blur-2xl" />
+            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-sm ring-1 ring-white/20">
+              <CarFront className="h-8 w-8" />
+            </div>
+            <div className="relative flex-1">
+              <h2 className="text-xl font-bold sm:text-2xl">ลงทะเบียนรถ</h2>
+              <p className="mt-1 text-sm leading-relaxed text-white/80 sm:text-base">
+                กรอกข้อมูลเพื่อลงทะเบียนรถเข้าพื้นที่จอดรถของโรงพยาบาล
+              </p>
+            </div>
+            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 transition group-hover:bg-white group-hover:text-wuh-800">
+              <ArrowRight className="h-5 w-5" />
+            </div>
+          </Link>
+
+          {/* Row 2: secondary shortcuts, two columns */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {SECONDARY_SHORTCUTS.map(({ href, icon: Icon, title, description, accent }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group relative flex animate-fade-in flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-card transition hover:-translate-y-1 hover:shadow-card-hover"
               >
-                <Icon className="h-6 w-6" />
-              </div>
-              <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-              <p className="mt-1.5 flex-1 text-sm leading-relaxed text-slate-500">{description}</p>
-              <div className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-wuh-700 transition group-hover:gap-2.5">
-                ไปที่หน้านี้
-                <ArrowRight className="h-4 w-4" />
-              </div>
-            </Link>
-          ))}
+                <ArrowUpRight className="absolute right-5 top-5 h-4 w-4 text-slate-300 transition group-hover:text-wuh-600" />
+                <div
+                  className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-white shadow-sm`}
+                >
+                  <Icon className="h-6 w-6" />
+                </div>
+                <h2 className="pr-6 text-base font-semibold text-slate-900">{title}</h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{description}</p>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 
