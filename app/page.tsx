@@ -4,7 +4,7 @@ import { Footer } from "@/components/Footer";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-wuh-50 via-white to-white dark:from-wuh-950 dark:via-slate-950 dark:to-slate-950">
+    <main className="min-h-screen bg-gradient-to-b from-wuh-50 via-white to-white">
       <div className="relative overflow-hidden bg-gradient-to-br from-wuh-700 via-wuh-800 to-accent-600 px-4 pb-24 pt-10 sm:pb-28 sm:pt-14">
         <div className="pointer-events-none absolute -left-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -right-10 top-24 h-56 w-56 rounded-full bg-accent-400/20 blur-2xl" />

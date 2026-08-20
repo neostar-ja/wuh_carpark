@@ -38,15 +38,15 @@ type SubmitState =
   | { status: "error"; message: string };
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-base text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-wuh-500 dark:focus:ring-wuh-900/60";
+  "w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-base text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100";
 const selectClass =
-  "w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-base text-slate-900 shadow-sm transition focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-100 dark:focus:border-wuh-500 dark:focus:ring-wuh-900/60";
-const labelClass = "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
-const errorClass = "mt-1.5 text-sm text-red-600 dark:text-red-400";
+  "w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-base text-slate-900 shadow-sm transition focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100";
+const labelClass = "mb-1.5 block text-sm font-medium text-slate-700";
+const errorClass = "mt-1.5 text-sm text-red-600";
 
 function FieldIcon({ icon: Icon }: { icon: React.ComponentType<{ className?: string }> }) {
   return (
-    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
+    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
       <Icon className="h-[18px] w-[18px]" />
     </span>
   );
@@ -63,12 +63,12 @@ function SectionHeader({
 }) {
   return (
     <div className="mb-4 flex items-center gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-wuh-100 text-wuh-700 dark:bg-wuh-900/50 dark:text-wuh-300">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-wuh-100 text-wuh-700">
         <Icon className="h-[18px] w-[18px]" />
       </div>
       <div>
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
-        <p className="text-xs text-slate-400 dark:text-slate-500">{subtitle}</p>
+        <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+        <p className="text-xs text-slate-400">{subtitle}</p>
       </div>
     </div>
   );
@@ -157,7 +157,7 @@ export function RegistrationForm() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="mx-auto w-full max-w-md animate-fade-in space-y-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card dark:border-slate-800 dark:bg-slate-900 sm:p-7"
+      className="mx-auto w-full max-w-md animate-fade-in space-y-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-7"
       noValidate
     >
       {/* Section: ข้อมูลผู้ลงทะเบียน */}
@@ -259,7 +259,7 @@ export function RegistrationForm() {
         </div>
       </section>
 
-      <div className="border-t border-dashed border-slate-200 dark:border-slate-800" />
+      <div className="border-t border-dashed border-slate-200" />
 
       {/* Section: ข้อมูลรถยนต์ */}
       <section>
@@ -356,7 +356,7 @@ export function RegistrationForm() {
         </div>
       </section>
 
-      <div className="border-t border-dashed border-slate-200 dark:border-slate-800" />
+      <div className="border-t border-dashed border-slate-200" />
 
       {/* Section: ยืนยันการลงทะเบียน */}
       <section>
@@ -364,23 +364,23 @@ export function RegistrationForm() {
         <div className="space-y-4">
           <label
             htmlFor="consent"
-            className="flex cursor-pointer items-start gap-2.5 rounded-xl bg-slate-50 p-3.5 dark:bg-slate-800/40"
+            className="flex cursor-pointer items-start gap-2.5 rounded-xl bg-slate-50 p-3.5"
           >
             <input
               id="consent"
               type="checkbox"
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-wuh-700 focus:ring-wuh-500 dark:border-slate-600 dark:bg-slate-700"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-wuh-700 focus:ring-wuh-500"
               {...register("consent")}
             />
-            <span className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+            <span className="text-sm leading-relaxed text-slate-600">
               {CONSENT_TEXT}
             </span>
           </label>
           {errors.consent && <p className={errorClass}>{errors.consent.message}</p>}
 
           <div>
-            <div className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
-              <ShieldCheck className="h-4 w-4 text-wuh-700 dark:text-wuh-400" />
+            <div className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-700">
+              <ShieldCheck className="h-4 w-4 text-wuh-700" />
               ยืนยันว่าไม่ใช่บอท
             </div>
             <TurnstileWidget
@@ -394,7 +394,7 @@ export function RegistrationForm() {
           </div>
 
           {submitState.status === "error" && (
-            <div className="rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400">
+            <div className="rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm text-red-700">
               {submitState.message}
             </div>
           )}

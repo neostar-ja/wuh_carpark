@@ -86,11 +86,11 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
   return (
     <div className="mx-auto w-full max-w-md animate-scale-in">
       <div className="mb-5 flex flex-col items-center text-center">
-        <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
-          <CheckCircle2 className="h-9 w-9 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
+        <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+          <CheckCircle2 className="h-9 w-9 text-emerald-600" strokeWidth={2} />
         </div>
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">ลงทะเบียนสำเร็จ</h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <h2 className="text-xl font-semibold text-slate-900">ลงทะเบียนสำเร็จ</h2>
+        <p className="mt-1 text-sm text-slate-500">
           กรุณาบันทึกบัตรจอดรถนี้ไว้เป็นหลักฐาน หรือแคปหน้าจอเก็บไว้
         </p>
       </div>
@@ -106,9 +106,9 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
           <div className="pointer-events-none absolute -right-6 -top-10 h-32 w-32 rounded-full bg-white/10" />
           <div className="pointer-events-none absolute -bottom-10 -left-4 h-24 w-24 rounded-full bg-white/10" />
           <div className="relative flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold leading-tight">{HOSPITAL_NAME_TH}</p>
-              <p className="truncate text-[11px] text-wuh-100/80">{HOSPITAL_NAME_EN}</p>
+            <div className="min-w-0 py-0.5">
+              <p className="truncate text-[13px] font-semibold leading-[1.8]">{HOSPITAL_NAME_TH}</p>
+              <p className="truncate text-[11px] leading-[1.8] text-wuh-100/80">{HOSPITAL_NAME_EN}</p>
             </div>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15">
               <CarFront className="h-5 w-5" />
@@ -119,7 +119,7 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
         <div className="flex items-center justify-between gap-3 border-b border-dashed border-slate-200 bg-wuh-50 px-5 py-4">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-wide text-wuh-700">ทะเบียนรถ</p>
-            <p className="font-mono text-2xl font-bold tracking-wide text-wuh-950">
+            <p className="text-3xl font-bold leading-normal tracking-[0.12em] text-wuh-950">
               {data.license_plate}
             </p>
           </div>
@@ -151,7 +151,7 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
       </div>
 
       {downloadError && (
-        <p className="mt-3 text-center text-sm text-red-600 dark:text-red-400">{downloadError}</p>
+        <p className="mt-3 text-center text-sm text-red-600">{downloadError}</p>
       )}
 
       <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
@@ -167,7 +167,7 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
         <button
           type="button"
           onClick={onReset}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
         >
           <RotateCcw className="h-4 w-4" />
           ลงทะเบียนคันถัดไป

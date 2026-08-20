@@ -71,13 +71,13 @@ export function TurnstileWidget({ onVerify, onExpire }: TurnstileWidgetProps) {
 
   if (!siteKey) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400">
+      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-500">
         [Turnstile placeholder] ยังไม่ได้ตั้งค่า NEXT_PUBLIC_TURNSTILE_SITE_KEY —
         ระบบจะข้ามการตรวจสอบ anti-bot ชั่วคราว
         <button
           type="button"
           onClick={() => onVerify("dev-placeholder-token")}
-          className="ml-2 font-medium text-wuh-700 underline dark:text-wuh-400"
+          className="ml-2 font-medium text-wuh-700 underline"
         >
           จำลองการยืนยันสำเร็จ
         </button>

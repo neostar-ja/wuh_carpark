@@ -6,6 +6,7 @@ html {
   font-family: var(--font-ibm-plex-sans), var(--font-ibm-plex-sans-thai), "Segoe UI", system-ui,
     -apple-system, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  color-scheme: light;
 }
 
 body {
@@ -16,18 +17,6 @@ body {
 ::selection {
   background-color: #ddd6fe;
   color: #4c1d95;
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #150f26;
-    color: #ede9fe;
-  }
-
-  ::selection {
-    background-color: #5b21b6;
-    color: #ede9fe;
-  }
 }
 
 /* subtle custom scrollbar for the admin table */
@@ -41,9 +30,4 @@ body {
 .thin-scrollbar::-webkit-scrollbar-thumb {
   background-color: #ddd6fe;
   border-radius: 9999px;
-}
-@media (prefers-color-scheme: dark) {
-  .thin-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #5b21b6;
-  }
 }
