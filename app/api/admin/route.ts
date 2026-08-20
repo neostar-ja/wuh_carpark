@@ -26,7 +26,26 @@ function toCsvValue(value: string): string {
   return value;
 }
 
-// GET: list registrations (?search=), or export CSV (?action=export)
+// Forces Excel to treat the value as text instead of a number, so a phone
+// number like "0899999999" keeps its leading zero instead of Excel
+// silently reading it as 899999999.
+function toCsvExcelText(value: string): string {
+  return toCsvValue(`="${value}"`);
+}
+
+// "YYYY-MM-DD" in Asia/Bangkok, optionally shifted forward by whole years —
+// used for the gate-system import's Start Time / End Time columns.
+function formatBangkokDate(isoDate: string, addYears = 0): string {
+  const [y, m, d] = new Date(isoDate)
+    .toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" })
+    .split("-")
+    .map(Number);
+  return new Date(Date.UTC(y + addYears, m - 1, d)).toISOString().slice(0, 10);
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// GET: list registrations (?search=), or export CSV (?action=export[&ids=...])
 export async function GET(req: NextRequest) {
   try {
     if (!isAuthenticated()) return unauthorized();
@@ -34,6 +53,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search")?.trim() ?? "";
     const action = searchParams.get("action");
+    const idsParam = searchParams.get("ids");
+    const selectedIds = idsParam
+      ? idsParam.split(",").map((s) => s.trim()).filter((s) => UUID_RE.test(s))
+      : null;
 
     let query = supabaseAdmin
       .from("car_registrations")
@@ -42,7 +65,10 @@ export async function GET(req: NextRequest) {
       )
       .order("created_at", { ascending: false });
 
-    if (search) {
+    if (selectedIds && selectedIds.length > 0) {
+      // Exporting a specific selection takes priority over any search filter.
+      query = query.in("id", selectedIds);
+    } else if (search) {
       const escaped = search.replace(/[%_]/g, (m) => `\\${m}`);
       query = query.or(
         `license_plate.ilike.%${escaped}%,full_name_en.ilike.%${escaped}%,full_name_th.ilike.%${escaped}%`
@@ -59,38 +85,54 @@ export async function GET(req: NextRequest) {
     }
 
     if (action === "export") {
+      const exportRows = data ?? [];
+
+      // Exporting a hand-picked selection means "send these to the gate
+      // system" — treat that as an approval action so status reflects
+      // reality. A plain "export all" (no selection) stays read-only.
+      if (selectedIds && selectedIds.length > 0 && exportRows.length > 0) {
+        const { error: approveError } = await supabaseAdmin
+          .from("car_registrations")
+          .update({ status: "approved", updated_at: new Date().toISOString() })
+          .in(
+            "id",
+            exportRows.map((r) => r.id)
+          );
+        if (approveError) {
+          return NextResponse.json(
+            { success: false, error: "อัปเดตสถานะไม่สำเร็จ" },
+            { status: 500 }
+          );
+        }
+        for (const row of exportRows) row.status = "approved";
+      }
+
       const header = [
-        "license_plate",
-        "full_name_th",
-        "full_name_en",
-        "username",
-        "position",
-        "department",
-        "phone_number",
-        "car_type",
-        "car_color",
-        "license_plate_type",
-        "status",
-        "created_at",
+        "Number Plate",
+        "Name",
+        "Phone",
+        "Description",
+        "Vehicle Type",
+        "Vehicle Color",
+        "License Plate Type",
+        "Start Time",
+        "End Time",
       ];
-      const rows = (data ?? []).map((row) =>
-        [
-          row.license_plate,
-          row.full_name_th,
-          row.full_name_en,
-          row.username,
-          row.position,
-          row.department,
-          row.phone_number,
-          row.car_type,
-          row.car_color,
-          row.license_plate_type,
-          row.status,
-          row.created_at,
-        ]
-          .map((v) => toCsvValue(String(v ?? "")))
-          .join(",")
-      );
+      const rows = exportRows.map((row) => {
+        const startTime = formatBangkokDate(row.created_at);
+        const endTime = formatBangkokDate(row.created_at, 7);
+        return [
+          toCsvValue(row.license_plate ?? ""),
+          toCsvValue(row.username || row.full_name_en || ""),
+          toCsvExcelText(row.phone_number ?? ""),
+          toCsvValue(row.full_name_en ?? ""),
+          toCsvValue(row.car_type ?? ""),
+          toCsvValue(row.car_color ?? ""),
+          toCsvValue(row.license_plate_type ?? ""),
+          toCsvValue(startTime),
+          toCsvValue(endTime),
+        ].join(",");
+      });
       const csv = [header.join(","), ...rows].join("\n");
 
       return new NextResponse(`﻿${csv}`, {

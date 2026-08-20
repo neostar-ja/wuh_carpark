@@ -13,6 +13,7 @@ import {
   Loader2,
   Eye,
   AtSign,
+  FileCheck2,
 } from "lucide-react";
 import type { Registration } from "@/lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -31,6 +32,22 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
   rejected: "bg-red-100 text-red-700",
 };
 
+async function downloadCsv(url: string, filename: string): Promise<{ error?: string }> {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    return { error: data?.error ?? "ส่งออกไม่สำเร็จ" };
+  }
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(objectUrl);
+  return {};
+}
+
 export function AdminTable() {
   const router = useRouter();
   const [rows, setRows] = useState<Registration[]>([]);
@@ -41,6 +58,8 @@ export function AdminTable() {
   const [selected, setSelected] = useState<Registration | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Registration | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState(false);
 
   const fetchRows = useCallback(
     async (searchTerm: string) => {
@@ -73,6 +92,16 @@ export function AdminTable() {
     const timeout = setTimeout(() => fetchRows(search), 300);
     return () => clearTimeout(timeout);
   }, [search, fetchRows]);
+
+  // Selection is a working set for export — drop anything no longer visible
+  // in the current (possibly search-filtered) rows.
+  useEffect(() => {
+    setCheckedIds((prev) => {
+      const visibleIds = new Set(rows.map((r) => r.id));
+      const next = new Set([...prev].filter((id) => visibleIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [rows]);
 
   const handleStatusChange = async (id: string, status: "approved" | "rejected") => {
     setUpdatingId(id);
@@ -125,6 +154,50 @@ export function AdminTable() {
     router.refresh();
   };
 
+  const toggleRow = (id: string) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const allChecked = rows.length > 0 && checkedIds.size === rows.length;
+  const toggleAll = () => {
+    setCheckedIds(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
+  };
+
+  const handleExportAll = async () => {
+    setExporting(true);
+    setError("");
+    const { error: err } = await downloadCsv(
+      "/api/admin?action=export",
+      `car_registrations_all_${Date.now()}.csv`
+    );
+    if (err) setError(err);
+    setExporting(false);
+  };
+
+  const handleExportSelected = async () => {
+    if (checkedIds.size === 0) return;
+    setExporting(true);
+    setError("");
+    const params = new URLSearchParams({ action: "export", ids: Array.from(checkedIds).join(",") });
+    const { error: err } = await downloadCsv(
+      `/api/admin?${params.toString()}`,
+      `car_registrations_selected_${Date.now()}.csv`
+    );
+    if (err) {
+      setError(err);
+    } else {
+      // Exported rows are auto-approved server-side — refresh to reflect it.
+      setCheckedIds(new Set());
+      fetchRows(search);
+    }
+    setExporting(false);
+  };
+
   const pendingCount = rows.filter((r) => r.status === "pending").length;
 
   return (
@@ -143,13 +216,14 @@ export function AdminTable() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <a
-              href="/api/admin?action=export"
-              className="flex items-center gap-1.5 rounded-lg border border-wuh-200 px-3 py-2 text-sm font-medium text-wuh-800 transition hover:bg-wuh-50"
+            <button
+              onClick={handleExportAll}
+              disabled={exporting}
+              className="flex items-center gap-1.5 rounded-lg border border-wuh-200 px-3 py-2 text-sm font-medium text-wuh-800 transition hover:bg-wuh-50 disabled:opacity-60"
             >
               <Download className="h-4 w-4" />
-              ส่งออก CSV
-            </a>
+              ส่งออกทั้งหมด
+            </button>
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
@@ -179,15 +253,28 @@ export function AdminTable() {
           </div>
         </div>
 
-        <div className="relative mb-4 max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="ค้นหาทะเบียนรถหรือชื่อ..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100"
-          />
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative max-w-sm flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="ค้นหาทะเบียนรถหรือชื่อ..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100"
+            />
+          </div>
+
+          {checkedIds.size > 0 && (
+            <button
+              onClick={handleExportSelected}
+              disabled={exporting}
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-wuh-700 to-accent-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:brightness-110 disabled:opacity-60"
+            >
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
+              ส่งออกที่เลือก ({checkedIds.size}) — อนุมัติอัตโนมัติ
+            </button>
+          )}
         </div>
 
         {error && (
@@ -200,6 +287,15 @@ export function AdminTable() {
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50">
               <tr>
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allChecked}
+                    onChange={toggleAll}
+                    className="h-4 w-4 rounded border-slate-300 text-wuh-700 focus:ring-wuh-500"
+                    aria-label="เลือกทั้งหมด"
+                  />
+                </th>
                 <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">ทะเบียนรถ</th>
                 <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">ชื่อ-นามสกุล</th>
                 <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Username</th>
@@ -215,7 +311,7 @@ export function AdminTable() {
             <tbody className="divide-y divide-slate-100">
               {loading && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-slate-400">
+                  <td colSpan={11} className="px-4 py-10 text-center text-slate-400">
                     <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" />
                     กำลังโหลดข้อมูล...
                   </td>
@@ -223,7 +319,7 @@ export function AdminTable() {
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-slate-400">
+                  <td colSpan={11} className="px-4 py-10 text-center text-slate-400">
                     ไม่พบข้อมูล
                   </td>
                 </tr>
@@ -233,8 +329,17 @@ export function AdminTable() {
                   <tr
                     key={row.id}
                     onClick={() => setSelected(row)}
-                    className="cursor-pointer transition hover:bg-wuh-50/60"
+                    className={`cursor-pointer transition hover:bg-wuh-50/60 ${checkedIds.has(row.id) ? "bg-wuh-50/40" : ""}`}
                   >
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={checkedIds.has(row.id)}
+                        onChange={() => toggleRow(row.id)}
+                        className="h-4 w-4 rounded border-slate-300 text-wuh-700 focus:ring-wuh-500"
+                        aria-label={`เลือก ${row.license_plate}`}
+                      />
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-slate-900">
                       {row.license_plate}
                     </td>
