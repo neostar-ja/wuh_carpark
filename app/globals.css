@@ -3,9 +3,29 @@
 @tailwind utilities;
 
 html {
-  font-family: "Noto Sans Thai", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-prompt), "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background-color: #f3f4f6;
+  background-color: #f0f5fb;
+  color: #0f1f33;
+}
+
+::selection {
+  background-color: #bcdcff;
+  color: #0a3a66;
+}
+
+/* subtle custom scrollbar for the admin table */
+.thin-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #bcdcff;
+  border-radius: 9999px;
 }

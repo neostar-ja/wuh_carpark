@@ -31,7 +31,8 @@ export const LICENSE_PLATE_TYPE_OPTIONS = [
 ] as const;
 
 const LICENSE_PLATE_REGEX = /^[ก-ฮ]{1,3}[0-9]{1,4}$/;
-const FULL_NAME_REGEX = /^[A-Za-z\s]+$/;
+const FULL_NAME_EN_REGEX = /^[A-Za-z\s]+$/;
+const FULL_NAME_TH_REGEX = /^[฀-๿\s]+$/;
 const PHONE_REGEX = /^0[0-9]{9}$/;
 
 export const registrationSchema = z.object({
@@ -43,14 +44,32 @@ export const registrationSchema = z.object({
     .refine((val) => LICENSE_PLATE_REGEX.test(val), {
       message: "รูปแบบทะเบียนไม่ถูกต้อง (ตัวอย่าง: กข1234)",
     }),
+  full_name_th: z
+    .string()
+    .trim()
+    .min(1, "กรุณากรอกชื่อ-นามสกุลภาษาไทย")
+    .max(100, "ชื่อยาวเกินไป")
+    .refine((val) => FULL_NAME_TH_REGEX.test(val), {
+      message: "กรุณากรอกเป็นภาษาไทยเท่านั้น (ห้ามมีตัวเลขหรือภาษาอังกฤษ)",
+    }),
   full_name_en: z
     .string()
     .trim()
-    .min(1, "กรุณากรอกชื่อ-นามสกุล")
+    .min(1, "กรุณากรอกชื่อ-นามสกุลภาษาอังกฤษ")
     .max(100, "ชื่อยาวเกินไป")
-    .refine((val) => FULL_NAME_REGEX.test(val), {
+    .refine((val) => FULL_NAME_EN_REGEX.test(val), {
       message: "กรุณากรอกเป็นภาษาอังกฤษเท่านั้น (ห้ามมีตัวเลขหรือภาษาไทย)",
     }),
+  position: z
+    .string()
+    .trim()
+    .min(1, "กรุณากรอกตำแหน่ง")
+    .max(100, "ข้อความยาวเกินไป"),
+  department: z
+    .string()
+    .trim()
+    .min(1, "กรุณากรอกหน่วยงาน/แผนก")
+    .max(100, "ข้อความยาวเกินไป"),
   phone_number: z
     .string()
     .trim()

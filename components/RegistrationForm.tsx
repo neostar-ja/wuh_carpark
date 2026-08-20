@@ -4,6 +4,19 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  IdCard,
+  User,
+  UserRound,
+  Briefcase,
+  Building2,
+  Phone,
+  CarFront,
+  Palette,
+  Tag,
+  ShieldCheck,
+  Loader2,
+} from "lucide-react";
+import {
   registrationSchema,
   RegistrationInput,
   CAR_TYPE_OPTIONS,
@@ -11,6 +24,7 @@ import {
   LICENSE_PLATE_TYPE_OPTIONS,
 } from "@/lib/validation";
 import { TurnstileWidget } from "./TurnstileWidget";
+import { RegistrationSuccessCard } from "./RegistrationSuccessCard";
 
 const CONSENT_TEXT =
   "ข้าพเจ้ายินยอมให้หน่วยงานเก็บและใช้ข้อมูลข้างต้นเพื่อวัตถุประสงค์การควบคุมพื้นที่จอดรถ";
@@ -18,8 +32,23 @@ const CONSENT_TEXT =
 type SubmitState =
   | { status: "idle" }
   | { status: "submitting" }
-  | { status: "success"; referenceId: string }
+  | { status: "success"; referenceId: string; data: RegistrationInput }
   | { status: "error"; message: string };
+
+const inputClass =
+  "w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-base text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100";
+const selectClass =
+  "w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-base text-slate-900 shadow-sm transition focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100";
+const labelClass = "mb-1.5 block text-sm font-medium text-slate-700";
+const errorClass = "mt-1.5 text-sm text-red-600";
+
+function FieldIcon({ icon: Icon }: { icon: React.ComponentType<{ className?: string }> }) {
+  return (
+    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+      <Icon className="h-[18px] w-[18px]" />
+    </span>
+  );
+}
 
 export function RegistrationForm() {
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
@@ -36,7 +65,10 @@ export function RegistrationForm() {
     resolver: zodResolver(registrationSchema),
     defaultValues: {
       license_plate: "",
+      full_name_th: "",
       full_name_en: "",
+      position: "",
+      department: "",
       phone_number: "",
       consent: false,
     },
@@ -75,8 +107,7 @@ export function RegistrationForm() {
         return;
       }
 
-      setSubmitState({ status: "success", referenceId: data.referenceId });
-      reset();
+      setSubmitState({ status: "success", referenceId: data.referenceId, data: values });
       setTurnstileToken("");
     } catch {
       setSubmitState({
@@ -88,192 +119,253 @@ export function RegistrationForm() {
 
   if (submitState.status === "success") {
     return (
-      <div className="mx-auto max-w-md rounded-lg border border-green-200 bg-green-50 p-6 text-center shadow-sm">
-        <div className="mb-3 text-4xl">✅</div>
-        <h2 className="mb-2 text-lg font-semibold text-green-800">ลงทะเบียนสำเร็จ</h2>
-        <p className="mb-4 text-sm text-gray-600">กรุณาเก็บหมายเลขอ้างอิงนี้ไว้เป็นหลักฐาน</p>
-        <div className="mb-4 rounded-md bg-white p-3 font-mono text-sm text-gray-800 break-all">
-          {submitState.referenceId}
-        </div>
-        <button
-          type="button"
-          onClick={() => setSubmitState({ status: "idle" })}
-          className="rounded-md bg-wuh-blue px-4 py-2 text-sm font-medium text-white hover:bg-wuh-navy"
-        >
-          ลงทะเบียนคันถัดไป
-        </button>
-      </div>
+      <RegistrationSuccessCard
+        referenceId={submitState.referenceId}
+        data={submitState.data}
+        onReset={() => {
+          reset();
+          setSubmitState({ status: "idle" });
+        }}
+      />
     );
   }
 
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="mx-auto max-w-md space-y-5 rounded-lg border border-gray-200 bg-white p-5 shadow-sm sm:p-6"
+      className="mx-auto w-full max-w-md animate-fade-in space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-7"
       noValidate
     >
       <div>
-        <label htmlFor="license_plate" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="license_plate" className={labelClass}>
           ทะเบียนรถ <span className="text-red-500">*</span>
         </label>
-        <input
-          id="license_plate"
-          type="text"
-          inputMode="text"
-          placeholder="เช่น กข1234"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-wuh-blue focus:outline-none focus:ring-1 focus:ring-wuh-blue"
-          {...register("license_plate", {
-            onChange: (e) => {
-              e.target.value = e.target.value.replace(/\s+/g, "");
-            },
-          })}
-        />
-        {errors.license_plate && (
-          <p className="mt-1 text-sm text-red-600">{errors.license_plate.message}</p>
-        )}
+        <div className="relative">
+          <FieldIcon icon={IdCard} />
+          <input
+            id="license_plate"
+            type="text"
+            inputMode="text"
+            placeholder="เช่น กข1234"
+            className={inputClass}
+            {...register("license_plate", {
+              onChange: (e) => {
+                e.target.value = e.target.value.replace(/\s+/g, "");
+              },
+            })}
+          />
+        </div>
+        {errors.license_plate && <p className={errorClass}>{errors.license_plate.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="full_name_en" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="full_name_th" className={labelClass}>
+          ชื่อ-นามสกุล (ภาษาไทย) <span className="text-red-500">*</span>
+        </label>
+        <div className="relative">
+          <FieldIcon icon={User} />
+          <input
+            id="full_name_th"
+            type="text"
+            placeholder="เช่น สมชาย ใจดี"
+            className={inputClass}
+            {...register("full_name_th")}
+          />
+        </div>
+        {errors.full_name_th && <p className={errorClass}>{errors.full_name_th.message}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="full_name_en" className={labelClass}>
           ชื่อ-นามสกุล (ภาษาอังกฤษ) <span className="text-red-500">*</span>
         </label>
-        <input
-          id="full_name_en"
-          type="text"
-          placeholder="e.g. Somchai Jaidee"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-wuh-blue focus:outline-none focus:ring-1 focus:ring-wuh-blue"
-          {...register("full_name_en")}
-        />
-        {errors.full_name_en && (
-          <p className="mt-1 text-sm text-red-600">{errors.full_name_en.message}</p>
-        )}
+        <div className="relative">
+          <FieldIcon icon={UserRound} />
+          <input
+            id="full_name_en"
+            type="text"
+            placeholder="e.g. Somchai Jaidee"
+            className={inputClass}
+            {...register("full_name_en")}
+          />
+        </div>
+        {errors.full_name_en && <p className={errorClass}>{errors.full_name_en.message}</p>}
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <label htmlFor="position" className={labelClass}>
+            ตำแหน่ง <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <FieldIcon icon={Briefcase} />
+            <input
+              id="position"
+              type="text"
+              placeholder="เช่น พยาบาลวิชาชีพ"
+              className={inputClass}
+              {...register("position")}
+            />
+          </div>
+          {errors.position && <p className={errorClass}>{errors.position.message}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="department" className={labelClass}>
+            หน่วยงาน <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <FieldIcon icon={Building2} />
+            <input
+              id="department"
+              type="text"
+              placeholder="เช่น แผนกผู้ป่วยนอก"
+              className={inputClass}
+              {...register("department")}
+            />
+          </div>
+          {errors.department && <p className={errorClass}>{errors.department.message}</p>}
+        </div>
       </div>
 
       <div>
-        <label htmlFor="phone_number" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="phone_number" className={labelClass}>
           เบอร์โทรศัพท์ <span className="text-red-500">*</span>
         </label>
-        <input
-          id="phone_number"
-          type="tel"
-          inputMode="numeric"
-          maxLength={10}
-          placeholder="0812345678"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-wuh-blue focus:outline-none focus:ring-1 focus:ring-wuh-blue"
-          {...register("phone_number", {
-            onChange: (e) => {
-              e.target.value = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
-            },
-          })}
-        />
-        {errors.phone_number && (
-          <p className="mt-1 text-sm text-red-600">{errors.phone_number.message}</p>
-        )}
+        <div className="relative">
+          <FieldIcon icon={Phone} />
+          <input
+            id="phone_number"
+            type="tel"
+            inputMode="numeric"
+            maxLength={10}
+            placeholder="0812345678"
+            className={inputClass}
+            {...register("phone_number", {
+              onChange: (e) => {
+                e.target.value = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
+              },
+            })}
+          />
+        </div>
+        {errors.phone_number && <p className={errorClass}>{errors.phone_number.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="car_type" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="car_type" className={labelClass}>
           ประเภทรถ <span className="text-red-500">*</span>
         </label>
-        <select
-          id="car_type"
-          defaultValue=""
-          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base focus:border-wuh-blue focus:outline-none focus:ring-1 focus:ring-wuh-blue"
-          {...register("car_type")}
-        >
-          <option value="" disabled>
-            -- เลือกประเภทรถ --
-          </option>
-          {CAR_TYPE_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
+        <div className="relative">
+          <FieldIcon icon={CarFront} />
+          <select id="car_type" defaultValue="" className={selectClass} {...register("car_type")}>
+            <option value="" disabled>
+              -- เลือกประเภทรถ --
             </option>
-          ))}
-        </select>
-        {errors.car_type && <p className="mt-1 text-sm text-red-600">{errors.car_type.message}</p>}
+            {CAR_TYPE_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+        {errors.car_type && <p className={errorClass}>{errors.car_type.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="car_color" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="car_color" className={labelClass}>
           สีรถ <span className="text-red-500">*</span>
         </label>
-        <select
-          id="car_color"
-          defaultValue=""
-          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base focus:border-wuh-blue focus:outline-none focus:ring-1 focus:ring-wuh-blue"
-          {...register("car_color")}
-        >
-          <option value="" disabled>
-            -- เลือกสีรถ --
-          </option>
-          {CAR_COLOR_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
+        <div className="relative">
+          <FieldIcon icon={Palette} />
+          <select id="car_color" defaultValue="" className={selectClass} {...register("car_color")}>
+            <option value="" disabled>
+              -- เลือกสีรถ --
             </option>
-          ))}
-        </select>
-        {errors.car_color && <p className="mt-1 text-sm text-red-600">{errors.car_color.message}</p>}
+            {CAR_COLOR_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+        {errors.car_color && <p className={errorClass}>{errors.car_color.message}</p>}
       </div>
 
       <div>
-        <label
-          htmlFor="license_plate_type"
-          className="mb-1 block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="license_plate_type" className={labelClass}>
           ประเภทป้ายทะเบียน <span className="text-red-500">*</span>
         </label>
-        <select
-          id="license_plate_type"
-          defaultValue=""
-          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base focus:border-wuh-blue focus:outline-none focus:ring-1 focus:ring-wuh-blue"
-          {...register("license_plate_type")}
-        >
-          <option value="" disabled>
-            -- เลือกประเภทป้ายทะเบียน --
-          </option>
-          {LICENSE_PLATE_TYPE_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
+        <div className="relative">
+          <FieldIcon icon={Tag} />
+          <select
+            id="license_plate_type"
+            defaultValue=""
+            className={selectClass}
+            {...register("license_plate_type")}
+          >
+            <option value="" disabled>
+              -- เลือกประเภทป้ายทะเบียน --
             </option>
-          ))}
-        </select>
+            {LICENSE_PLATE_TYPE_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
         {errors.license_plate_type && (
-          <p className="mt-1 text-sm text-red-600">{errors.license_plate_type.message}</p>
+          <p className={errorClass}>{errors.license_plate_type.message}</p>
         )}
       </div>
 
-      <div className="flex items-start gap-2">
+      <label
+        htmlFor="consent"
+        className="flex cursor-pointer items-start gap-2.5 rounded-xl bg-slate-50 p-3.5"
+      >
         <input
           id="consent"
           type="checkbox"
-          className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-wuh-blue focus:ring-wuh-blue"
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-wuh-700 focus:ring-wuh-500"
           {...register("consent")}
         />
-        <label htmlFor="consent" className="text-sm text-gray-600">
-          {CONSENT_TEXT}
-        </label>
-      </div>
-      {errors.consent && <p className="-mt-3 text-sm text-red-600">{errors.consent.message}</p>}
+        <span className="text-sm leading-relaxed text-slate-600">{CONSENT_TEXT}</span>
+      </label>
+      {errors.consent && <p className={errorClass}>{errors.consent.message}</p>}
 
-      <TurnstileWidget
-        onVerify={(token) => {
-          setTurnstileToken(token);
-          setTurnstileError("");
-        }}
-        onExpire={() => setTurnstileToken("")}
-      />
-      {turnstileError && <p className="text-sm text-red-600">{turnstileError}</p>}
+      <div>
+        <div className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-700">
+          <ShieldCheck className="h-4 w-4 text-wuh-700" />
+          ยืนยันว่าไม่ใช่บอท
+        </div>
+        <TurnstileWidget
+          onVerify={(token) => {
+            setTurnstileToken(token);
+            setTurnstileError("");
+          }}
+          onExpire={() => setTurnstileToken("")}
+        />
+        {turnstileError && <p className={errorClass}>{turnstileError}</p>}
+      </div>
 
       {submitState.status === "error" && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{submitState.message}</div>
+        <div className="rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm text-red-700">
+          {submitState.message}
+        </div>
       )}
 
       <button
         type="submit"
         disabled={isSubmitting || submitState.status === "submitting"}
-        className="w-full rounded-md bg-wuh-blue px-4 py-2.5 text-base font-medium text-white transition hover:bg-wuh-navy disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-wuh-800 px-4 py-3 text-base font-semibold text-white shadow-card transition hover:bg-wuh-900 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {submitState.status === "submitting" ? "กำลังส่งข้อมูล..." : "ลงทะเบียน"}
+        {submitState.status === "submitting" ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            กำลังส่งข้อมูล...
+          </>
+        ) : (
+          "ลงทะเบียน"
+        )}
       </button>
     </form>
   );

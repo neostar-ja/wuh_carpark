@@ -10,16 +10,8 @@ export default function AdminPage() {
   const isAuthenticated = verifyAdminSessionToken(token);
 
   if (!isAuthenticated) {
-    return (
-      <main className="min-h-screen bg-gray-100 px-4">
-        <AdminLoginForm />
-      </main>
-    );
+    return <AdminLoginForm />;
   }
 
-  return (
-    <main className="min-h-screen bg-gray-100">
-      <AdminTable />
-    </main>
-  );
+  return <AdminTable />;
 }

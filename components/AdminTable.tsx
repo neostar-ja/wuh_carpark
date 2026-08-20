@@ -2,11 +2,23 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Search,
+  Download,
+  LogOut,
+  Check,
+  X,
+  CarFront,
+  Loader2,
+} from "lucide-react";
 
 type Registration = {
   id: string;
   license_plate: string;
+  full_name_th: string;
   full_name_en: string;
+  position: string;
+  department: string;
   phone_number: string;
   car_type: string;
   car_color: string;
@@ -22,9 +34,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
+  pending: "bg-amber-100 text-amber-700",
+  approved: "bg-emerald-100 text-emerald-700",
+  rejected: "bg-red-100 text-red-700",
 };
 
 export function AdminTable() {
@@ -92,109 +104,161 @@ export function AdminTable() {
     router.refresh();
   };
 
+  const pendingCount = rows.filter((r) => r.status === "pending").length;
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-wuh-navy">รายการลงทะเบียนรถ</h1>
-        <div className="flex items-center gap-2">
-          <a
-            href="/api/admin?action=export"
-            className="rounded-md border border-wuh-blue px-3 py-2 text-sm font-medium text-wuh-blue hover:bg-blue-50"
-          >
-            ส่งออก CSV
-          </a>
-          <button
-            onClick={handleLogout}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
-          >
-            ออกจากระบบ
-          </button>
+    <div className="min-h-screen bg-slate-50">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-wuh-800 text-white">
+              <CarFront className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold text-slate-900">รายการลงทะเบียนรถ</h1>
+              <p className="text-xs text-slate-500">
+                ระบบลงทะเบียนที่จอดรถ · โรงพยาบาลศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href="/api/admin?action=export"
+              className="flex items-center gap-1.5 rounded-lg border border-wuh-200 px-3 py-2 text-sm font-medium text-wuh-800 transition hover:bg-wuh-50"
+            >
+              <Download className="h-4 w-4" />
+              ส่งออก CSV
+            </a>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            >
+              <LogOut className="h-4 w-4" />
+              ออกจากระบบ
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <input
-        type="text"
-        placeholder="ค้นหาทะเบียนรถหรือชื่อ..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="mb-4 w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-wuh-blue focus:outline-none focus:ring-1 focus:ring-wuh-blue"
-      />
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        <div className="mb-5 grid grid-cols-3 gap-3 sm:max-w-md">
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <p className="text-xs text-slate-400">ทั้งหมด</p>
+            <p className="text-lg font-semibold text-slate-900">{rows.length}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <p className="text-xs text-slate-400">รอดำเนินการ</p>
+            <p className="text-lg font-semibold text-amber-600">{pendingCount}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <p className="text-xs text-slate-400">อนุมัติแล้ว</p>
+            <p className="text-lg font-semibold text-emerald-600">
+              {rows.filter((r) => r.status === "approved").length}
+            </p>
+          </div>
+        </div>
 
-      {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+        <div className="relative mb-4 max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="ค้นหาทะเบียนรถหรือชื่อ..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100"
+          />
+        </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">ทะเบียนรถ</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">ชื่อ-นามสกุล</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">เบอร์โทร</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">ประเภทรถ</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">สีรถ</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">ประเภทป้าย</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">สถานะ</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">วันที่ลงทะเบียน</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">การจัดการ</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading && (
+        {error && (
+          <div className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="thin-scrollbar overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50">
               <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-gray-400">
-                  กำลังโหลดข้อมูล...
-                </td>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">ทะเบียนรถ</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">ชื่อ-นามสกุล</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">ตำแหน่ง</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">หน่วยงาน</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">เบอร์โทร</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">ประเภทรถ</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">สีรถ</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">ประเภทป้าย</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">สถานะ</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">วันที่ลงทะเบียน</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">การจัดการ</th>
               </tr>
-            )}
-            {!loading && rows.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-gray-400">
-                  ไม่พบข้อมูล
-                </td>
-              </tr>
-            )}
-            {!loading &&
-              rows.map((row) => (
-                <tr key={row.id}>
-                  <td className="whitespace-nowrap px-3 py-2 font-medium text-gray-900">
-                    {row.license_plate}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-gray-700">{row.full_name_en}</td>
-                  <td className="whitespace-nowrap px-3 py-2 text-gray-700">{row.phone_number}</td>
-                  <td className="whitespace-nowrap px-3 py-2 text-gray-700">{row.car_type}</td>
-                  <td className="whitespace-nowrap px-3 py-2 text-gray-700">{row.car_color}</td>
-                  <td className="whitespace-nowrap px-3 py-2 text-gray-700">{row.license_plate_type}</td>
-                  <td className="whitespace-nowrap px-3 py-2">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_CLASS[row.status] ?? "bg-gray-100 text-gray-700"}`}
-                    >
-                      {STATUS_LABEL[row.status] ?? row.status}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-gray-500">
-                    {new Date(row.created_at).toLocaleString("th-TH")}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleStatusChange(row.id, "approved")}
-                        disabled={updatingId === row.id || row.status === "approved"}
-                        className="rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                      >
-                        อนุมัติ
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(row.id, "rejected")}
-                        disabled={updatingId === row.id || row.status === "rejected"}
-                        className="rounded-md bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                      >
-                        ไม่อนุมัติ
-                      </button>
-                    </div>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading && (
+                <tr>
+                  <td colSpan={11} className="px-4 py-10 text-center text-slate-400">
+                    <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" />
+                    กำลังโหลดข้อมูล...
                   </td>
                 </tr>
-              ))}
-          </tbody>
-        </table>
+              )}
+              {!loading && rows.length === 0 && (
+                <tr>
+                  <td colSpan={11} className="px-4 py-10 text-center text-slate-400">
+                    ไม่พบข้อมูล
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                rows.map((row) => (
+                  <tr key={row.id} className="transition hover:bg-slate-50">
+                    <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-slate-900">
+                      {row.license_plate}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">
+                      <div>{row.full_name_th}</div>
+                      <div className="text-xs text-slate-400">{row.full_name_en}</div>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">{row.position}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">{row.department}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">{row.phone_number}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">{row.car_type}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">{row.car_color}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">{row.license_plate_type}</td>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_CLASS[row.status] ?? "bg-slate-100 text-slate-700"}`}
+                      >
+                        {STATUS_LABEL[row.status] ?? row.status}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-500">
+                      {new Date(row.created_at).toLocaleString("th-TH")}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => handleStatusChange(row.id, "approved")}
+                          disabled={updatingId === row.id || row.status === "approved"}
+                          className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          อนุมัติ
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(row.id, "rejected")}
+                          disabled={updatingId === row.id || row.status === "rejected"}
+                          className="flex items-center gap-1 rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          ไม่อนุมัติ
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

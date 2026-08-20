@@ -28,72 +28,86 @@ function toCsvValue(value: string): string {
 
 // GET: list registrations (?search=), or export CSV (?action=export)
 export async function GET(req: NextRequest) {
-  if (!isAuthenticated()) return unauthorized();
+  try {
+    if (!isAuthenticated()) return unauthorized();
 
-  const { searchParams } = new URL(req.url);
-  const search = searchParams.get("search")?.trim() ?? "";
-  const action = searchParams.get("action");
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search")?.trim() ?? "";
+    const action = searchParams.get("action");
 
-  let query = supabaseAdmin
-    .from("car_registrations")
-    .select(
-      "id, license_plate, full_name_en, phone_number, car_type, car_color, license_plate_type, status, created_at"
-    )
-    .order("created_at", { ascending: false });
+    let query = supabaseAdmin
+      .from("car_registrations")
+      .select(
+        "id, license_plate, full_name_th, full_name_en, position, department, phone_number, car_type, car_color, license_plate_type, status, created_at"
+      )
+      .order("created_at", { ascending: false });
 
-  if (search) {
-    const escaped = search.replace(/[%_]/g, (m) => `\\${m}`);
-    query = query.or(
-      `license_plate.ilike.%${escaped}%,full_name_en.ilike.%${escaped}%`
-    );
-  }
+    if (search) {
+      const escaped = search.replace(/[%_]/g, (m) => `\\${m}`);
+      query = query.or(
+        `license_plate.ilike.%${escaped}%,full_name_en.ilike.%${escaped}%,full_name_th.ilike.%${escaped}%`
+      );
+    }
 
-  const { data, error } = await query;
+    const { data, error } = await query;
 
-  if (error) {
+    if (error) {
+      return NextResponse.json(
+        { success: false, error: "เกิดข้อผิดพลาดในการดึงข้อมูล" },
+        { status: 500 }
+      );
+    }
+
+    if (action === "export") {
+      const header = [
+        "license_plate",
+        "full_name_th",
+        "full_name_en",
+        "position",
+        "department",
+        "phone_number",
+        "car_type",
+        "car_color",
+        "license_plate_type",
+        "status",
+        "created_at",
+      ];
+      const rows = (data ?? []).map((row) =>
+        [
+          row.license_plate,
+          row.full_name_th,
+          row.full_name_en,
+          row.position,
+          row.department,
+          row.phone_number,
+          row.car_type,
+          row.car_color,
+          row.license_plate_type,
+          row.status,
+          row.created_at,
+        ]
+          .map((v) => toCsvValue(String(v ?? "")))
+          .join(",")
+      );
+      const csv = [header.join(","), ...rows].join("\n");
+
+      return new NextResponse(`﻿${csv}`, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="car_registrations_${Date.now()}.csv"`,
+        },
+      });
+    }
+
+    return NextResponse.json({ success: true, data });
+  } catch (err) {
+    console.error("GET /api/admin failed:", err);
     return NextResponse.json(
-      { success: false, error: "เกิดข้อผิดพลาดในการดึงข้อมูล" },
+      { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
       { status: 500 }
     );
   }
-
-  if (action === "export") {
-    const header = [
-      "license_plate",
-      "full_name_en",
-      "phone_number",
-      "car_type",
-      "car_color",
-      "license_plate_type",
-      "status",
-      "created_at",
-    ];
-    const rows = (data ?? []).map((row) =>
-      [
-        row.license_plate,
-        row.full_name_en,
-        row.phone_number,
-        row.car_type,
-        row.car_color,
-        row.license_plate_type,
-        row.status,
-        row.created_at,
-      ]
-        .map((v) => toCsvValue(String(v ?? "")))
-        .join(",")
-    );
-    const csv = [header.join(","), ...rows].join("\n");
-
-    return new NextResponse(csv, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="car_registrations_${Date.now()}.csv"`,
-      },
-    });
-  }
-
-  return NextResponse.json({ success: true, data });
 }
 
 const loginSchema = z.object({
@@ -107,70 +121,86 @@ const logoutSchema = z.object({
 
 // POST: login / logout
 export async function POST(req: NextRequest) {
-  let json: unknown;
   try {
-    json = await req.json();
-  } catch {
-    return NextResponse.json({ success: false, error: "รูปแบบข้อมูลไม่ถูกต้อง" }, { status: 400 });
-  }
+    let json: unknown;
+    try {
+      json = await req.json();
+    } catch {
+      return NextResponse.json({ success: false, error: "รูปแบบข้อมูลไม่ถูกต้อง" }, { status: 400 });
+    }
 
-  const logoutParsed = logoutSchema.safeParse(json);
-  if (logoutParsed.success) {
-    cookies().delete(ADMIN_SESSION_COOKIE);
+    const logoutParsed = logoutSchema.safeParse(json);
+    if (logoutParsed.success) {
+      cookies().delete(ADMIN_SESSION_COOKIE);
+      return NextResponse.json({ success: true });
+    }
+
+    const loginParsed = loginSchema.safeParse(json);
+    if (!loginParsed.success) {
+      return NextResponse.json({ success: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
+    }
+
+    if (!checkAdminPassword(loginParsed.data.password)) {
+      return NextResponse.json(
+        { success: false, error: "รหัสผ่านไม่ถูกต้อง" },
+        { status: 401 }
+      );
+    }
+
+    const token = createAdminSessionToken();
+    cookies().set(ADMIN_SESSION_COOKIE, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 8 * 60 * 60,
+    });
+
     return NextResponse.json({ success: true });
-  }
-
-  const loginParsed = loginSchema.safeParse(json);
-  if (!loginParsed.success) {
-    return NextResponse.json({ success: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
-  }
-
-  if (!checkAdminPassword(loginParsed.data.password)) {
+  } catch (err) {
+    console.error("POST /api/admin failed:", err);
     return NextResponse.json(
-      { success: false, error: "รหัสผ่านไม่ถูกต้อง" },
-      { status: 401 }
+      { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
+      { status: 500 }
     );
   }
-
-  const token = createAdminSessionToken();
-  cookies().set(ADMIN_SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 8 * 60 * 60,
-  });
-
-  return NextResponse.json({ success: true });
 }
 
 // PATCH: update registration status (approve / reject)
 export async function PATCH(req: NextRequest) {
-  if (!isAuthenticated()) return unauthorized();
-
-  let json: unknown;
   try {
-    json = await req.json();
-  } catch {
-    return NextResponse.json({ success: false, error: "รูปแบบข้อมูลไม่ถูกต้อง" }, { status: 400 });
-  }
+    if (!isAuthenticated()) return unauthorized();
 
-  const parsed = statusUpdateSchema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json({ success: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
-  }
+    let json: unknown;
+    try {
+      json = await req.json();
+    } catch {
+      return NextResponse.json({ success: false, error: "รูปแบบข้อมูลไม่ถูกต้อง" }, { status: 400 });
+    }
 
-  const { error } = await supabaseAdmin
-    .from("car_registrations")
-    .update({ status: parsed.data.status, updated_at: new Date().toISOString() })
-    .eq("id", parsed.data.id);
+    const parsed = statusUpdateSchema.safeParse(json);
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
+    }
 
-  if (error) {
+    const { error } = await supabaseAdmin
+      .from("car_registrations")
+      .update({ status: parsed.data.status, updated_at: new Date().toISOString() })
+      .eq("id", parsed.data.id);
+
+    if (error) {
+      return NextResponse.json(
+        { success: false, error: "อัปเดตสถานะไม่สำเร็จ" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("PATCH /api/admin failed:", err);
     return NextResponse.json(
-      { success: false, error: "อัปเดตสถานะไม่สำเร็จ" },
+      { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
       { status: 500 }
     );
   }
-
-  return NextResponse.json({ success: true });
 }

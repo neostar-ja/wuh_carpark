@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Lock, ShieldCheck, Loader2 } from "lucide-react";
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -36,32 +37,53 @@ export function AdminLoginForm() {
   };
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="mx-auto mt-24 max-w-sm space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
-    >
-      <h1 className="text-lg font-semibold text-wuh-navy">เข้าสู่ระบบผู้ดูแล</h1>
-      <div>
-        <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-          รหัสผ่าน
-        </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-wuh-blue focus:outline-none focus:ring-1 focus:ring-wuh-blue"
-          autoFocus
-        />
-      </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded-md bg-wuh-blue px-4 py-2.5 text-base font-medium text-white hover:bg-wuh-navy disabled:opacity-60"
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-wuh-900 to-wuh-800 px-4">
+      <form
+        onSubmit={onSubmit}
+        className="w-full max-w-sm animate-scale-in space-y-5 rounded-2xl border border-white/10 bg-white p-7 shadow-card"
       >
-        {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-      </button>
-    </form>
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-wuh-50">
+            <ShieldCheck className="h-6 w-6 text-wuh-800" />
+          </div>
+          <h1 className="text-lg font-semibold text-slate-900">เข้าสู่ระบบผู้ดูแล</h1>
+          <p className="mt-1 text-sm text-slate-500">ระบบลงทะเบียนที่จอดรถ WUH</p>
+        </div>
+
+        <div>
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+            รหัสผ่าน
+          </label>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <Lock className="h-[18px] w-[18px]" />
+            </span>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-base text-slate-900 shadow-sm transition focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100"
+              autoFocus
+            />
+          </div>
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-wuh-800 px-4 py-3 text-base font-semibold text-white shadow-card transition hover:bg-wuh-900 disabled:opacity-60"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              กำลังเข้าสู่ระบบ...
+            </>
+          ) : (
+            "เข้าสู่ระบบ"
+          )}
+        </button>
+      </form>
+    </div>
   );
 }
