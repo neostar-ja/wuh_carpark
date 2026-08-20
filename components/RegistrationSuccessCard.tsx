@@ -60,6 +60,11 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
     setDownloading(true);
     setDownloadError("");
     try {
+      // html2canvas can snapshot mid-reflow if the web font hasn't finished
+      // loading yet, producing ghosted/overlapping text in the output image.
+      if (typeof document !== "undefined" && "fonts" in document) {
+        await document.fonts.ready;
+      }
       const { default: html2canvas } = await import("html2canvas");
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
@@ -81,20 +86,23 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
   return (
     <div className="mx-auto w-full max-w-md animate-scale-in">
       <div className="mb-5 flex flex-col items-center text-center">
-        <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-          <CheckCircle2 className="h-9 w-9 text-emerald-600" strokeWidth={2} />
+        <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+          <CheckCircle2 className="h-9 w-9 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
         </div>
-        <h2 className="text-xl font-semibold text-slate-900">ลงทะเบียนสำเร็จ</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">ลงทะเบียนสำเร็จ</h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           กรุณาบันทึกบัตรจอดรถนี้ไว้เป็นหลักฐาน หรือแคปหน้าจอเก็บไว้
         </p>
       </div>
 
+      {/* This card is intentionally kept light-mode-only (fixed white
+          background) since it doubles as a printable/savable pass image —
+          it should render the same regardless of the viewer's OS theme. */}
       <div
         ref={cardRef}
         className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card"
       >
-        <div className="relative overflow-hidden bg-gradient-to-br from-wuh-700 via-wuh-800 to-wuh-950 px-5 py-4 text-white">
+        <div className="relative overflow-hidden bg-gradient-to-br from-wuh-700 via-wuh-800 to-accent-600 px-5 py-4 text-white">
           <div className="pointer-events-none absolute -right-6 -top-10 h-32 w-32 rounded-full bg-white/10" />
           <div className="pointer-events-none absolute -bottom-10 -left-4 h-24 w-24 rounded-full bg-white/10" />
           <div className="relative flex items-center justify-between gap-3">
@@ -143,7 +151,7 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
       </div>
 
       {downloadError && (
-        <p className="mt-3 text-center text-sm text-red-600">{downloadError}</p>
+        <p className="mt-3 text-center text-sm text-red-600 dark:text-red-400">{downloadError}</p>
       )}
 
       <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
@@ -151,7 +159,7 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
           type="button"
           onClick={handleDownload}
           disabled={downloading}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-wuh-800 px-4 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-wuh-900 disabled:opacity-60"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-wuh-700 to-accent-600 px-4 py-3 text-sm font-semibold text-white shadow-card transition hover:brightness-110 disabled:opacity-60"
         >
           <Download className="h-4 w-4" />
           {downloading ? "กำลังบันทึก..." : "บันทึกรูปภาพ"}
@@ -159,7 +167,7 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
         <button
           type="button"
           onClick={onReset}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
         >
           <RotateCcw className="h-4 w-4" />
           ลงทะเบียนคันถัดไป

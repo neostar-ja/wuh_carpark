@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Prompt } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Sans_Thai } from "next/font/google";
 import "./globals.css";
 
-const prompt = Prompt({
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-ibm-plex-sans",
+  display: "swap",
+});
+
+const ibmPlexSansThai = IBM_Plex_Sans_Thai({
   subsets: ["thai", "latin"],
   weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-prompt",
+  variable: "--font-ibm-plex-sans-thai",
   display: "swap",
 });
 
@@ -18,12 +25,15 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0b5ea8",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#7c3aed" },
+    { media: "(prefers-color-scheme: dark)", color: "#4c1d95" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th" className={prompt.variable}>
+    <html lang="th" className={`${ibmPlexSans.variable} ${ibmPlexSansThai.variable}`}>
       <body>{children}</body>
     </html>
   );

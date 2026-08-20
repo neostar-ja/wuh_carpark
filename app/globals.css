@@ -3,18 +3,31 @@
 @tailwind utilities;
 
 html {
-  font-family: var(--font-prompt), "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-ibm-plex-sans), var(--font-ibm-plex-sans-thai), "Segoe UI", system-ui,
+    -apple-system, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background-color: #f0f5fb;
-  color: #0f1f33;
+  background-color: #faf8ff;
+  color: #1e1533;
 }
 
 ::selection {
-  background-color: #bcdcff;
-  color: #0a3a66;
+  background-color: #ddd6fe;
+  color: #4c1d95;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #150f26;
+    color: #ede9fe;
+  }
+
+  ::selection {
+    background-color: #5b21b6;
+    color: #ede9fe;
+  }
 }
 
 /* subtle custom scrollbar for the admin table */
@@ -26,6 +39,11 @@ body {
   background: transparent;
 }
 .thin-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #bcdcff;
+  background-color: #ddd6fe;
   border-radius: 9999px;
+}
+@media (prefers-color-scheme: dark) {
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #5b21b6;
+  }
 }

@@ -37,25 +37,25 @@ export function AdminLoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-wuh-900 to-wuh-800 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-wuh-900 via-wuh-800 to-accent-700 px-4">
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-sm animate-scale-in space-y-5 rounded-2xl border border-white/10 bg-white p-7 shadow-card"
+        className="w-full max-w-sm animate-scale-in space-y-5 rounded-2xl border border-white/10 bg-white p-7 shadow-card dark:bg-slate-900"
       >
         <div className="flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-wuh-50">
-            <ShieldCheck className="h-6 w-6 text-wuh-800" />
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-wuh-50 dark:bg-wuh-900/50">
+            <ShieldCheck className="h-6 w-6 text-wuh-800 dark:text-wuh-300" />
           </div>
-          <h1 className="text-lg font-semibold text-slate-900">เข้าสู่ระบบผู้ดูแล</h1>
-          <p className="mt-1 text-sm text-slate-500">ระบบลงทะเบียนที่จอดรถ WUH</p>
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">เข้าสู่ระบบผู้ดูแล</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">ระบบลงทะเบียนที่จอดรถ WUH</p>
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
             รหัสผ่าน
           </label>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
               <Lock className="h-[18px] w-[18px]" />
             </span>
             <input
@@ -63,16 +63,16 @@ export function AdminLoginForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-base text-slate-900 shadow-sm transition focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-base text-slate-900 shadow-sm transition focus:border-wuh-600 focus:outline-none focus:ring-2 focus:ring-wuh-100 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-100 dark:focus:border-wuh-500 dark:focus:ring-wuh-900/60"
               autoFocus
             />
           </div>
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-wuh-800 px-4 py-3 text-base font-semibold text-white shadow-card transition hover:bg-wuh-900 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-wuh-700 to-accent-600 px-4 py-3 text-base font-semibold text-white shadow-card transition hover:brightness-110 disabled:opacity-60"
         >
           {loading ? (
             <>

@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "media",
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -8,26 +9,43 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-prompt)", "system-ui", "sans-serif"],
+        sans: [
+          "var(--font-ibm-plex-sans)",
+          "var(--font-ibm-plex-sans-thai)",
+          "system-ui",
+          "sans-serif",
+        ],
       },
       colors: {
         wuh: {
-          50: "#eef6ff",
-          100: "#d9ecff",
-          200: "#bcdcff",
-          300: "#8ec4ff",
-          400: "#59a4ff",
-          500: "#3183fb",
-          600: "#1a63f0",
-          700: "#164ddd",
-          800: "#0b5ea8",
-          900: "#0a3a66",
-          950: "#082749",
+          50: "#f5f3ff",
+          100: "#ede9fe",
+          200: "#ddd6fe",
+          300: "#c4b5fd",
+          400: "#a78bfa",
+          500: "#8b5cf6",
+          600: "#7c3aed",
+          700: "#6d28d9",
+          800: "#5b21b6",
+          900: "#4c1d95",
+          950: "#341a6b",
+        },
+        accent: {
+          50: "#fff7ed",
+          100: "#ffedd5",
+          200: "#fed7aa",
+          300: "#fdba74",
+          400: "#fb923c",
+          500: "#f97316",
+          600: "#ea580c",
+          700: "#c2410c",
+          800: "#9a3412",
+          900: "#7c2d12",
         },
       },
       boxShadow: {
-        card: "0 1px 2px rgba(10, 58, 102, 0.06), 0 8px 24px -8px rgba(10, 58, 102, 0.18)",
-        "card-hover": "0 2px 4px rgba(10, 58, 102, 0.08), 0 16px 32px -12px rgba(10, 58, 102, 0.24)",
+        card: "0 1px 2px rgba(76, 29, 149, 0.06), 0 8px 24px -8px rgba(76, 29, 149, 0.18)",
+        "card-hover": "0 2px 4px rgba(76, 29, 149, 0.08), 0 16px 32px -12px rgba(76, 29, 149, 0.24)",
       },
       animation: {
         "fade-in": "fade-in 0.4s ease-out",
