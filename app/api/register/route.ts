@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { registrationApiSchema, licensePlateCheckSchema } from "@/lib/validation";
 import { checkRateLimit, checkLookupRateLimit, getClientIp } from "@/lib/rate-limit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
+import { generateUsername } from "@/lib/username";
 
 const requestSchema = registrationApiSchema.extend({
   turnstileToken: z.string().optional(),
@@ -130,12 +131,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const username = await generateUsername(registration.full_name_en, async (candidate) => {
+      const { data } = await supabaseAdmin
+        .from("car_registrations")
+        .select("id")
+        .eq("username", candidate)
+        .maybeSingle();
+      return Boolean(data);
+    });
+
     const { data: inserted, error: insertError } = await supabaseAdmin
       .from("car_registrations")
       .insert({
         license_plate: registration.license_plate,
         full_name_th: registration.full_name_th,
         full_name_en: registration.full_name_en,
+        username,
         position: registration.position,
         department: registration.department,
         phone_number: registration.phone_number,
@@ -147,8 +158,17 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertError || !inserted) {
-      // Unique-constraint race: two requests for the same plate landed at once.
+      // Unique-constraint race: two requests landed at once. Distinguish
+      // which column collided so the message stays accurate — a username
+      // race (two people, same generated code, same instant) is rare but
+      // shouldn't be reported to the user as a duplicate license plate.
       if (insertError?.code === "23505") {
+        if (insertError.message?.includes("username")) {
+          return NextResponse.json(
+            { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
+            { status: 409 }
+          );
+        }
         return NextResponse.json(
           { success: false, error: "ทะเบียนนี้ลงทะเบียนแล้ว" },
           { status: 409 }

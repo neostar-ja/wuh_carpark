@@ -103,3 +103,7 @@ export const statusUpdateSchema = z.object({
   id: z.string().uuid(),
   status: z.enum(["pending", "approved", "rejected"]),
 });
+
+export const deleteRegistrationSchema = z.object({
+  id: z.string().uuid(),
+});

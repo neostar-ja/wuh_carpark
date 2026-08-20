@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase";
-import { statusUpdateSchema } from "@/lib/validation";
+import { statusUpdateSchema, deleteRegistrationSchema } from "@/lib/validation";
 import {
   ADMIN_SESSION_COOKIE,
   checkAdminPassword,
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     let query = supabaseAdmin
       .from("car_registrations")
       .select(
-        "id, license_plate, full_name_th, full_name_en, position, department, phone_number, car_type, car_color, license_plate_type, status, created_at"
+        "id, license_plate, full_name_th, full_name_en, username, position, department, phone_number, car_type, car_color, license_plate_type, status, created_at"
       )
       .order("created_at", { ascending: false });
 
@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
         "license_plate",
         "full_name_th",
         "full_name_en",
+        "username",
         "position",
         "department",
         "phone_number",
@@ -77,6 +78,7 @@ export async function GET(req: NextRequest) {
           row.license_plate,
           row.full_name_th,
           row.full_name_en,
+          row.username,
           row.position,
           row.department,
           row.phone_number,
@@ -198,6 +200,45 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("PATCH /api/admin failed:", err);
+    return NextResponse.json(
+      { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE: remove a registration permanently
+export async function DELETE(req: NextRequest) {
+  try {
+    if (!isAuthenticated()) return unauthorized();
+
+    let json: unknown;
+    try {
+      json = await req.json();
+    } catch {
+      return NextResponse.json({ success: false, error: "รูปแบบข้อมูลไม่ถูกต้อง" }, { status: 400 });
+    }
+
+    const parsed = deleteRegistrationSchema.safeParse(json);
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from("car_registrations")
+      .delete()
+      .eq("id", parsed.data.id);
+
+    if (error) {
+      return NextResponse.json(
+        { success: false, error: "ลบข้อมูลไม่สำเร็จ" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("DELETE /api/admin failed:", err);
     return NextResponse.json(
       { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
       { status: 500 }
