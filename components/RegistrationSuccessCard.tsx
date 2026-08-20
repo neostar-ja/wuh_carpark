@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Sarabun } from "next/font/google";
 import {
   CheckCircle2,
   Download,
@@ -28,16 +29,21 @@ type Props = {
 const HOSPITAL_NAME_TH = "โรงพยาบาลศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์";
 const HOSPITAL_NAME_EN = "Walailak University Hospital";
 
-// html2canvas has known trouble measuring combining Thai vowel/tone marks
-// when the page's self-hosted webfont (IBM Plex Sans Thai) is in play —
-// the marks get clipped in the rendered PNG even though the live page looks
-// fine. Tahoma is a long-standing, universally cached system font with
-// solid Thai shaping support, so the captured card forces it instead of
-// inheriting the site's branded font — a deliberate trade-off of a little
-// brand consistency for a save-image feature that actually works. Verified
-// working; do not remove when restyling this component.
-const SAFE_THAI_FONT_STACK =
-  "Tahoma, 'Leelawadee UI', 'Noto Sans Thai', 'Segoe UI', Arial, sans-serif";
+// html2canvas had trouble measuring combining Thai vowel/tone marks in the
+// site's main webfont (IBM Plex Sans Thai) — they got clipped in the saved
+// PNG even though the live page looked fine. Sarabun is the standard font
+// behind Thai government/certificate document generation and is widely used
+// specifically for html2canvas-rendered Thai documents, so the captured
+// card loads it directly (own next/font instance, independent of the site's
+// main font) rather than inheriting the branded UI font. Kept alongside the
+// document.fonts.ready wait and generous line-height below — all three
+// together are what make the saved image render correctly; don't remove
+// any of them when restyling this component.
+const sarabun = Sarabun({
+  subsets: ["thai", "latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -89,14 +95,14 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
         </p>
       </div>
 
-      {/* Intentionally kept light-mode-only and pinned to a safe system font
-          (see SAFE_THAI_FONT_STACK) since this doubles as a printable/savable
-          pass image — it should render identically regardless of the
-          viewer's OS theme or which webfonts happen to be loaded. */}
+      {/* Intentionally kept light-mode-only since this doubles as a
+          printable/savable pass image — it should render identically
+          regardless of the viewer's OS theme. Font is pinned to this
+          component's own Sarabun instance (see comment above) rather than
+          the site's main webfont. */}
       <div
         ref={cardRef}
-        style={{ fontFamily: SAFE_THAI_FONT_STACK }}
-        className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-card-hover"
+        className={`${sarabun.className} overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-card-hover`}
       >
         <div className="relative overflow-hidden bg-gradient-to-br from-wuh-700 via-wuh-800 to-accent-600 px-6 py-6 text-white">
           <div
