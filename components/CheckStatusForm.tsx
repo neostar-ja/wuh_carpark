@@ -17,10 +17,12 @@ import {
   Palette,
   Tag,
   User,
+  Clock,
   RotateCcw,
 } from "lucide-react";
 import { checkStatusSchema } from "@/lib/validation";
 import { z } from "zod";
+import { InfoDetailRow } from "./InfoDetailRow";
 
 type FormInput = z.infer<typeof checkStatusSchema>;
 
@@ -68,26 +70,6 @@ const inputClass =
 const labelClass = "mb-1.5 block text-sm font-medium text-slate-700";
 const errorClass = "mt-1.5 text-sm text-red-600";
 
-function DetailRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-start gap-2.5">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-wuh-600" />
-      <div className="min-w-0">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
-        <p className="truncate text-sm font-medium text-slate-800">{value}</p>
-      </div>
-    </div>
-  );
-}
-
 export function CheckStatusForm() {
   const [result, setResult] = useState<QueryState>({ status: "idle" });
 
@@ -134,35 +116,66 @@ export function CheckStatusForm() {
       className: "bg-slate-100 text-slate-700",
     };
     const StatusIcon = config.icon;
+    const submittedAt = new Date(result.data.created_at).toLocaleString("th-TH", {
+      dateStyle: "long",
+      timeStyle: "short",
+    });
 
     return (
       <div className="mx-auto w-full max-w-md animate-scale-in">
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-          <div className="relative overflow-hidden bg-gradient-to-br from-wuh-700 via-wuh-800 to-accent-600 px-5 py-5 text-white">
-            <div className="pointer-events-none absolute -right-6 -top-10 h-32 w-32 rounded-full bg-white/10" />
-            <p className="relative text-[11px] font-medium uppercase tracking-wide text-white/70">
-              ทะเบียนรถ
-            </p>
-            <p className="relative text-3xl font-bold tracking-[0.12em]">{result.data.license_plate}</p>
-          </div>
+        <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-card-hover">
+          <div className="relative overflow-hidden bg-gradient-to-br from-wuh-700 via-wuh-800 to-accent-600 px-6 py-6 text-white">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.12]"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+                backgroundSize: "18px 18px",
+              }}
+            />
+            <div className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/10" />
+            <div className="pointer-events-none absolute -bottom-14 -left-6 h-28 w-28 rounded-full bg-white/10" />
 
-          <div className="flex items-center justify-center gap-2 border-b border-dashed border-slate-200 bg-wuh-50 px-5 py-5">
-            <span
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${config.className}`}
-            >
-              <StatusIcon className="h-4 w-4" />
-              {config.label}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-4 gap-y-4 px-5 py-5">
-            <div className="col-span-2">
-              <DetailRow icon={User} label="ชื่อ-นามสกุล" value={result.data.full_name_th} />
+            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+              <CarFront className="h-5 w-5" />
             </div>
-            <DetailRow icon={MapPin} label="จังหวัด" value={result.data.province} />
-            <DetailRow icon={CarFront} label="ประเภทรถ" value={result.data.car_type} />
-            <DetailRow icon={Palette} label="สีรถ" value={result.data.car_color} />
-            <DetailRow icon={Tag} label="ประเภทป้าย" value={result.data.license_plate_type} />
+
+            <div className="relative mt-5">
+              <p className="text-[11px] font-medium uppercase tracking-widest text-white/70">
+                ทะเบียนรถ
+              </p>
+              <div className="mt-1 flex items-end justify-between gap-3">
+                <p className="text-4xl font-bold tracking-[0.1em]">{result.data.license_plate}</p>
+                <span
+                  className={`mb-1 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${config.className}`}
+                >
+                  <StatusIcon className="h-3.5 w-3.5" />
+                  {config.label}
+                </span>
+              </div>
+              <p className="mt-1.5 flex items-center gap-1 text-xs text-white/75">
+                <MapPin className="h-3 w-3" />
+                จังหวัด{result.data.province}
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t border-dashed border-slate-200" />
+
+          <div className="grid grid-cols-2 gap-x-4 gap-y-5 px-6 py-6">
+            <div className="col-span-2">
+              <InfoDetailRow icon={User} label="ชื่อ-นามสกุล" value={result.data.full_name_th} />
+            </div>
+            <InfoDetailRow icon={CarFront} label="ประเภทรถ" value={result.data.car_type} />
+            <InfoDetailRow icon={Palette} label="สีรถ" value={result.data.car_color} />
+            <div className="col-span-2">
+              <InfoDetailRow icon={Tag} label="ประเภทป้ายทะเบียน" value={result.data.license_plate_type} />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 border-t border-dashed border-slate-200 bg-wuh-50/60 px-6 py-4 text-[11px] text-slate-500">
+            <Clock className="h-3.5 w-3.5" />
+            ลงทะเบียนเมื่อ {submittedAt}
           </div>
         </div>
 

@@ -14,8 +14,10 @@ import {
   MapPin,
   Clock,
   RotateCcw,
+  Sparkles,
 } from "lucide-react";
 import type { RegistrationInput } from "@/lib/validation";
+import { InfoDetailRow } from "./InfoDetailRow";
 
 type Props = {
   referenceId: string;
@@ -32,31 +34,10 @@ const HOSPITAL_NAME_EN = "Walailak University Hospital";
 // fine. Tahoma is a long-standing, universally cached system font with
 // solid Thai shaping support, so the captured card forces it instead of
 // inheriting the site's branded font — a deliberate trade-off of a little
-// brand consistency for a save-image feature that actually works.
+// brand consistency for a save-image feature that actually works. Verified
+// working; do not remove when restyling this component.
 const SAFE_THAI_FONT_STACK =
   "Tahoma, 'Leelawadee UI', 'Noto Sans Thai', 'Segoe UI', Arial, sans-serif";
-
-function DetailRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-start gap-2.5">
-      <Icon className="mt-1 h-4 w-4 shrink-0 text-wuh-600" />
-      <div className="min-w-0 py-0.5">
-        <p className="text-[11px] font-medium uppercase leading-[1.8] tracking-wide text-slate-400">
-          {label}
-        </p>
-        <p className="truncate text-sm font-medium leading-[1.8] text-slate-800">{value}</p>
-      </div>
-    </div>
-  );
-}
 
 export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -115,59 +96,75 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
       <div
         ref={cardRef}
         style={{ fontFamily: SAFE_THAI_FONT_STACK }}
-        className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card"
+        className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-card-hover"
       >
-        <div className="relative overflow-hidden bg-gradient-to-br from-wuh-700 via-wuh-800 to-accent-600 px-5 py-5 text-white">
-          <div className="pointer-events-none absolute -right-6 -top-10 h-32 w-32 rounded-full bg-white/10" />
-          <div className="pointer-events-none absolute -bottom-10 -left-4 h-24 w-24 rounded-full bg-white/10" />
-          <div className="relative flex items-center justify-between gap-3">
-            <div className="min-w-0 py-0.5">
-              <p className="truncate text-[13px] font-semibold leading-[2]">{HOSPITAL_NAME_TH}</p>
-              <p className="truncate text-[11px] leading-[2] text-wuh-100/80">{HOSPITAL_NAME_EN}</p>
-            </div>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15">
-              <CarFront className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
+        <div className="relative overflow-hidden bg-gradient-to-br from-wuh-700 via-wuh-800 to-accent-600 px-6 py-6 text-white">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.12]"
+            style={{
+              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+              backgroundSize: "18px 18px",
+            }}
+          />
+          <div className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/10" />
+          <div className="pointer-events-none absolute -bottom-14 -left-6 h-28 w-28 rounded-full bg-white/10" />
 
-        <div className="flex items-center justify-between gap-3 border-b border-dashed border-slate-200 bg-wuh-50 px-5 py-5">
-          <div>
-            <p className="text-[11px] font-medium uppercase leading-[1.8] tracking-wide text-wuh-700">
+          <div className="relative flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+                <CarFront className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 py-0.5">
+                <p className="truncate text-[13px] font-semibold leading-[2]">{HOSPITAL_NAME_TH}</p>
+                <p className="truncate text-[11px] leading-[2] text-wuh-100/80">{HOSPITAL_NAME_EN}</p>
+              </div>
+            </div>
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase leading-[1.8] tracking-wider ring-1 ring-white/20">
+              <Sparkles className="h-3 w-3" />
+              Pass
+            </span>
+          </div>
+
+          <div className="relative mt-6">
+            <p className="text-[11px] font-medium uppercase leading-[1.8] tracking-widest text-white/70">
               ทะเบียนรถ
             </p>
-            <p className="text-3xl font-bold leading-normal tracking-[0.12em] text-wuh-950">
-              {data.license_plate}
-            </p>
-            <p className="mt-0.5 flex items-center gap-1 text-xs leading-[1.8] text-wuh-700/80">
+            <div className="mt-1 flex items-end justify-between gap-3">
+              <p className="text-4xl font-bold leading-normal tracking-[0.1em]">{data.license_plate}</p>
+              <span className="mb-1 flex shrink-0 items-center gap-1.5 rounded-full bg-amber-400/90 px-3 py-1.5 text-xs font-semibold leading-[1.8] text-amber-950">
+                รอดำเนินการ
+              </span>
+            </div>
+            <p className="mt-1.5 flex items-center gap-1 text-xs leading-[1.8] text-white/75">
               <MapPin className="h-3 w-3" />
-              {data.province}
+              จังหวัด{data.province}
             </p>
           </div>
-          <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold leading-[1.8] text-amber-700">
-            รอดำเนินการ
-          </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-4 gap-y-4 px-5 py-5">
+        <div className="border-t border-dashed border-slate-200" />
+
+        <div className="grid grid-cols-2 gap-x-4 gap-y-5 px-6 py-6">
           <div className="col-span-2">
-            <DetailRow icon={User} label="ชื่อ-นามสกุล" value={data.full_name_th} />
+            <InfoDetailRow icon={User} label="ชื่อ-นามสกุล" value={data.full_name_th} />
           </div>
-          <DetailRow icon={Briefcase} label="ตำแหน่ง" value={data.position} />
-          <DetailRow icon={Building2} label="หน่วยงาน" value={data.department} />
-          <DetailRow icon={Phone} label="เบอร์โทรศัพท์" value={data.phone_number} />
-          <DetailRow icon={Palette} label="สี / ประเภทรถ" value={`${data.car_color} · ${data.car_type}`} />
+          <InfoDetailRow icon={Briefcase} label="ตำแหน่ง" value={data.position} />
+          <InfoDetailRow icon={Building2} label="หน่วยงาน" value={data.department} />
+          <InfoDetailRow icon={Phone} label="เบอร์โทรศัพท์" value={data.phone_number} />
+          <InfoDetailRow icon={Palette} label="สี / ประเภทรถ" value={`${data.car_color} · ${data.car_type}`} />
           <div className="col-span-2">
-            <DetailRow icon={Tag} label="ประเภทป้ายทะเบียน" value={data.license_plate_type} />
+            <InfoDetailRow icon={Tag} label="ประเภทป้ายทะเบียน" value={data.license_plate_type} />
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-dashed border-slate-200 px-5 py-4">
-          <div className="flex items-center gap-1.5 text-[11px] leading-[1.8] text-slate-400">
+        <div className="flex items-center justify-between gap-3 border-t border-dashed border-slate-200 bg-wuh-50/60 px-6 py-4">
+          <div className="flex items-center gap-1.5 text-[11px] leading-[1.8] text-slate-500">
             <Clock className="h-3.5 w-3.5" />
             {submittedAt}
           </div>
-          <p className="font-mono text-[11px] leading-[1.8] text-slate-400">{referenceId.slice(0, 8)}</p>
+          <p className="rounded-md bg-white px-2 py-1 font-mono text-[11px] leading-[1.8] text-slate-400 shadow-sm">
+            #{referenceId.slice(0, 8)}
+          </p>
         </div>
       </div>
 

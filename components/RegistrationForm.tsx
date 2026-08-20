@@ -112,7 +112,7 @@ export function RegistrationForm() {
       position: "",
       department: "",
       phone_number: "",
-      province: undefined,
+      province: "นครศรีธรรมราช",
       car_color: undefined,
       consent: false,
     },
@@ -364,7 +364,12 @@ export function RegistrationForm() {
             </label>
             <div className="relative">
               <FieldIcon icon={MapPin} />
-              <select id="province" defaultValue="" className={selectClass} {...register("province")}>
+              <select
+                id="province"
+                defaultValue="นครศรีธรรมราช"
+                className={selectClass}
+                {...register("province")}
+              >
                 <option value="" disabled>
                   -- เลือกจังหวัด --
                 </option>
