@@ -48,6 +48,10 @@ export const checkRateLimit = createLimiter(5);
 // single user can trigger several debounced lookups while editing one field.
 export const checkLookupRateLimit = createLimiter(20);
 
+// Public status check (plate + phone): returns more personal detail than the
+// plain duplicate check, so it stays tighter to blunt guessing both fields.
+export const checkStatusRateLimit = createLimiter(10);
+
 export function getClientIp(headers: Headers): string {
   const forwardedFor = headers.get("x-forwarded-for");
   if (forwardedFor) {

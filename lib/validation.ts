@@ -118,6 +118,13 @@ export type RegistrationInput = z.infer<typeof registrationSchema>;
 // Standalone schema for the license-plate-only duplicate-check endpoint.
 export const licensePlateCheckSchema = registrationSchema.pick({ license_plate: true });
 
+// Standalone schema for the public status-check page — proving "ownership"
+// via matching both plate and phone together, not just one field.
+export const checkStatusSchema = registrationSchema.pick({
+  license_plate: true,
+  phone_number: true,
+});
+
 // Schema for the payload actually sent to the API (client strips consent-only UI concerns off nothing;
 // consent is still required server-side to mirror client validation exactly).
 export const registrationApiSchema = registrationSchema;
