@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, ShieldCheck, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, Lock, ShieldCheck, Loader2 } from "lucide-react";
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -37,7 +38,16 @@ export function AdminLoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-wuh-900 via-wuh-800 to-accent-700 px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gradient-to-br from-wuh-900 via-wuh-800 to-accent-700 px-4">
+      <div className="w-full max-w-sm">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-medium text-white/85 backdrop-blur-sm transition hover:bg-white/15 hover:text-white"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          กลับหน้าแรก
+        </Link>
+      </div>
       <form
         onSubmit={onSubmit}
         className="w-full max-w-sm animate-scale-in space-y-5 rounded-2xl border border-white/10 bg-white p-7 shadow-card"

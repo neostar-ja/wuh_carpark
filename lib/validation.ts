@@ -137,3 +137,10 @@ export const statusUpdateSchema = z.object({
 export const deleteRegistrationSchema = z.object({
   id: z.string().uuid(),
 });
+
+// Admin edit of an existing registration's own submitted data — same rules
+// as the public form (minus consent, which only ever applies at submission
+// time), plus the id of the row being edited.
+export const updateRegistrationSchema = registrationSchema.omit({ consent: true }).extend({
+  id: z.string().uuid(),
+});

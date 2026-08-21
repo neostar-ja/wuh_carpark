@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Search,
   Download,
@@ -11,9 +12,9 @@ import {
   Trash2,
   CarFront,
   Loader2,
-  Eye,
   AtSign,
   FileCheck2,
+  ArrowLeft,
 } from "lucide-react";
 import type { Registration } from "@/lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -216,6 +217,13 @@ export function AdminTable() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              กลับหน้าแรก
+            </Link>
             <button
               onClick={handleExportAll}
               disabled={exporting}
@@ -376,13 +384,6 @@ export function AdminTable() {
                     <td className="whitespace-nowrap px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1.5">
                         <button
-                          onClick={() => setSelected(row)}
-                          className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          ดู
-                        </button>
-                        <button
                           onClick={() => handleStatusChange(row.id, "approved")}
                           disabled={updatingId === row.id || row.status === "approved"}
                           className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
@@ -423,6 +424,10 @@ export function AdminTable() {
           onReject={() => handleStatusChange(selected.id, "rejected")}
           onDelete={() => {
             setPendingDelete(selected);
+          }}
+          onSaved={(updated) => {
+            setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+            setSelected(updated);
           }}
           busy={updatingId === selected.id}
         />

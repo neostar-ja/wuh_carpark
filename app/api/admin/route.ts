@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase";
-import { statusUpdateSchema, deleteRegistrationSchema } from "@/lib/validation";
+import { statusUpdateSchema, deleteRegistrationSchema, updateRegistrationSchema } from "@/lib/validation";
 import {
   ADMIN_SESSION_COOKIE,
   checkAdminPassword,
@@ -242,6 +242,83 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("PATCH /api/admin failed:", err);
+    return NextResponse.json(
+      { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT: edit a registration's own submitted data (not just status)
+export async function PUT(req: NextRequest) {
+  try {
+    if (!isAuthenticated()) return unauthorized();
+
+    let json: unknown;
+    try {
+      json = await req.json();
+    } catch {
+      return NextResponse.json({ success: false, error: "รูปแบบข้อมูลไม่ถูกต้อง" }, { status: 400 });
+    }
+
+    const parsed = updateRegistrationSchema.safeParse(json);
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "ข้อมูลไม่ถูกต้อง",
+          fieldErrors: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 }
+      );
+    }
+
+    const { id, ...fields } = parsed.data;
+
+    // A duplicate plate check that excludes this row itself, since editing
+    // a record to keep its own existing plate must not look like a clash.
+    const { data: existing, error: lookupError } = await supabaseAdmin
+      .from("car_registrations")
+      .select("id")
+      .eq("license_plate", fields.license_plate)
+      .neq("id", id)
+      .maybeSingle();
+
+    if (lookupError) {
+      return NextResponse.json(
+        { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
+        { status: 500 }
+      );
+    }
+
+    if (existing) {
+      return NextResponse.json(
+        { success: false, error: "ทะเบียนนี้ถูกใช้งานโดยรายการอื่นแล้ว" },
+        { status: 409 }
+      );
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from("car_registrations")
+      .update({ ...fields, updated_at: new Date().toISOString() })
+      .eq("id", id);
+
+    if (updateError) {
+      if (updateError.code === "23505") {
+        return NextResponse.json(
+          { success: false, error: "ทะเบียนนี้ถูกใช้งานโดยรายการอื่นแล้ว" },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json(
+        { success: false, error: "บันทึกข้อมูลไม่สำเร็จ" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("PUT /api/admin failed:", err);
     return NextResponse.json(
       { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
       { status: 500 }
