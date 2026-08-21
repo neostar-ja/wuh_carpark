@@ -27,19 +27,18 @@ type Props = {
 const HOSPITAL_NAME_TH = "โรงพยาบาลศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์";
 const HOSPITAL_NAME_EN = "Walailak University Hospital";
 
-// html2canvas has real, proven trouble with combining Thai vowel/tone marks
-// in *every* self-hosted webfont we've tried here (IBM Plex Sans Thai, then
-// Sarabun) — marks like the thanthakhat get silently dropped in the saved
-// PNG even though the live page looks fine. Tahoma is a long-standing
-// system font (no @font-face loading involved at all, so no timing/hinting
-// surprises for html2canvas to trip over) and is the only option that has
-// actually been confirmed correct end-to-end by the person using this
-// feature. Do not swap this for a self-hosted webfont again without
-// re-verifying an *actual* downloaded PNG — the live on-screen render
-// looking right is not sufficient evidence, both prior regressions looked
-// fine live and only broke in the captured image.
+// Attempt #3 at a nicer-looking font for this card, at the user's explicit
+// request after being told the risk: IBM Plex Sans Thai is the site's main
+// webfont (loaded globally in app/layout.tsx as --font-ibm-plex-sans /
+// --font-ibm-plex-sans-thai) and is literally the SAME font that caused the
+// original clipping bug here in the first place, before Tahoma fixed it.
+// Sarabun (a different self-hosted webfont) then failed the same way.
+// Reusing the site's existing font loading here rather than instantiating a
+// third one — if this also clips combining marks in the actual downloaded
+// PNG, the fix is reverting SAFE_THAI_FONT_STACK to the Tahoma stack further
+// down in git history, not tweaking this further.
 const SAFE_THAI_FONT_STACK =
-  "Tahoma, 'Leelawadee UI', 'Noto Sans Thai', 'Segoe UI', Arial, sans-serif";
+  "var(--font-ibm-plex-sans), var(--font-ibm-plex-sans-thai), Tahoma, Arial, sans-serif";
 
 export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
