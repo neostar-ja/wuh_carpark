@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Sarabun } from "next/font/google";
 import {
   CheckCircle2,
   Download,
@@ -15,7 +14,6 @@ import {
   MapPin,
   Clock,
   RotateCcw,
-  Sparkles,
 } from "lucide-react";
 import type { RegistrationInput } from "@/lib/validation";
 import { InfoDetailRow } from "./InfoDetailRow";
@@ -29,21 +27,19 @@ type Props = {
 const HOSPITAL_NAME_TH = "โรงพยาบาลศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์";
 const HOSPITAL_NAME_EN = "Walailak University Hospital";
 
-// html2canvas had trouble measuring combining Thai vowel/tone marks in the
-// site's main webfont (IBM Plex Sans Thai) — they got clipped in the saved
-// PNG even though the live page looked fine. Sarabun is the standard font
-// behind Thai government/certificate document generation and is widely used
-// specifically for html2canvas-rendered Thai documents, so the captured
-// card loads it directly (own next/font instance, independent of the site's
-// main font) rather than inheriting the branded UI font. Kept alongside the
-// document.fonts.ready wait and generous line-height below — all three
-// together are what make the saved image render correctly; don't remove
-// any of them when restyling this component.
-const sarabun = Sarabun({
-  subsets: ["thai", "latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
+// html2canvas has real, proven trouble with combining Thai vowel/tone marks
+// in *every* self-hosted webfont we've tried here (IBM Plex Sans Thai, then
+// Sarabun) — marks like the thanthakhat get silently dropped in the saved
+// PNG even though the live page looks fine. Tahoma is a long-standing
+// system font (no @font-face loading involved at all, so no timing/hinting
+// surprises for html2canvas to trip over) and is the only option that has
+// actually been confirmed correct end-to-end by the person using this
+// feature. Do not swap this for a self-hosted webfont again without
+// re-verifying an *actual* downloaded PNG — the live on-screen render
+// looking right is not sufficient evidence, both prior regressions looked
+// fine live and only broke in the captured image.
+const SAFE_THAI_FONT_STACK =
+  "Tahoma, 'Leelawadee UI', 'Noto Sans Thai', 'Segoe UI', Arial, sans-serif";
 
 export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -95,14 +91,17 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
         </p>
       </div>
 
-      {/* Intentionally kept light-mode-only since this doubles as a
-          printable/savable pass image — it should render identically
-          regardless of the viewer's OS theme. Font is pinned to this
-          component's own Sarabun instance (see comment above) rather than
-          the site's main webfont. */}
+      {/* Intentionally kept light-mode-only and pinned to a safe system font
+          (see SAFE_THAI_FONT_STACK) since this doubles as a printable/savable
+          pass image — it should render identically regardless of the
+          viewer's OS theme or which webfonts happen to be loaded. Nothing in
+          the header row competes with the hospital name for width (no
+          badges, no truncate) — a previous version clipped the name against
+          a decorative badge sharing the same row. */}
       <div
         ref={cardRef}
-        className={`${sarabun.className} overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-card-hover`}
+        style={{ fontFamily: SAFE_THAI_FONT_STACK }}
+        className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-card-hover"
       >
         <div className="relative overflow-hidden bg-gradient-to-br from-wuh-700 via-wuh-800 to-accent-600 px-6 py-6 text-white">
           <div
@@ -115,20 +114,14 @@ export function RegistrationSuccessCard({ referenceId, data, onReset }: Props) {
           <div className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/10" />
           <div className="pointer-events-none absolute -bottom-14 -left-6 h-28 w-28 rounded-full bg-white/10" />
 
-          <div className="relative flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
-                <CarFront className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 py-0.5">
-                <p className="truncate text-[13px] font-semibold leading-[2]">{HOSPITAL_NAME_TH}</p>
-                <p className="truncate text-[11px] leading-[2] text-wuh-100/80">{HOSPITAL_NAME_EN}</p>
-              </div>
+          <div className="relative flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+              <CarFront className="h-5 w-5" />
             </div>
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase leading-[1.8] tracking-wider ring-1 ring-white/20">
-              <Sparkles className="h-3 w-3" />
-              Pass
-            </span>
+            <div className="min-w-0 py-0.5">
+              <p className="text-[13px] font-semibold leading-[2]">{HOSPITAL_NAME_TH}</p>
+              <p className="text-[11px] leading-[2] text-wuh-100/80">{HOSPITAL_NAME_EN}</p>
+            </div>
           </div>
 
           <div className="relative mt-6">

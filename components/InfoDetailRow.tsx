@@ -14,7 +14,7 @@ export function InfoDetailRow({ icon: Icon, label, value }: Props) {
         <p className="text-[11px] font-medium uppercase leading-[1.8] tracking-wide text-slate-400">
           {label}
         </p>
-        <p className="truncate text-sm font-semibold leading-[1.8] text-slate-800">{value || "-"}</p>
+        <p className="break-words text-sm font-semibold leading-[1.8] text-slate-800">{value || "-"}</p>
       </div>
     </div>
   );
