@@ -23,8 +23,15 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { RegistrationDetailModal } from "./RegistrationDetailModal";
 import { Footer } from "./Footer";
 
-type ImportResult = {
+type GateImportResult = {
   totalRows: number;
+  updatedCount: number;
+  skipped: { plate: string; reason: string }[];
+};
+
+type RosterImportResult = {
+  totalRows: number;
+  createdCount: number;
   updatedCount: number;
   skipped: { plate: string; reason: string }[];
 };
@@ -69,9 +76,12 @@ export function AdminTable() {
   const [deleting, setDeleting] = useState(false);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [gateImporting, setGateImporting] = useState(false);
+  const [gateImportResult, setGateImportResult] = useState<GateImportResult | null>(null);
+  const gateFileInputRef = useRef<HTMLInputElement>(null);
+  const [rosterImporting, setRosterImporting] = useState(false);
+  const [rosterImportResult, setRosterImportResult] = useState<RosterImportResult | null>(null);
+  const rosterFileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchRows = useCallback(
     async (searchTerm: string) => {
@@ -210,26 +220,26 @@ export function AdminTable() {
     setExporting(false);
   };
 
-  const handleDownloadTemplate = async () => {
+  const handleDownloadGateTemplate = async () => {
     setError("");
-    const { error: err } = await downloadFile("/api/admin?action=template", "import_template.xlsx");
+    const { error: err } = await downloadFile("/api/admin?action=template", "gate_import_template.xlsx");
     if (err) setError(err);
   };
 
-  const handleImportClick = () => {
-    setImportResult(null);
+  const handleGateImportClick = () => {
+    setGateImportResult(null);
     setError("");
-    fileInputRef.current?.click();
+    gateFileInputRef.current?.click();
   };
 
-  const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGateImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-selecting the same file next time
     if (!file) return;
 
-    setImporting(true);
+    setGateImporting(true);
     setError("");
-    setImportResult(null);
+    setGateImportResult(null);
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -239,7 +249,7 @@ export function AdminTable() {
         setError(data.error ?? "นำเข้าไฟล์ไม่สำเร็จ");
         return;
       }
-      setImportResult({
+      setGateImportResult({
         totalRows: data.totalRows,
         updatedCount: data.updatedCount,
         skipped: data.skipped ?? [],
@@ -248,7 +258,53 @@ export function AdminTable() {
     } catch {
       setError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
     } finally {
-      setImporting(false);
+      setGateImporting(false);
+    }
+  };
+
+  const handleDownloadRosterTemplate = async () => {
+    setError("");
+    const { error: err } = await downloadFile(
+      "/api/admin?action=roster-template",
+      "roster_template.xlsx"
+    );
+    if (err) setError(err);
+  };
+
+  const handleRosterImportClick = () => {
+    setRosterImportResult(null);
+    setError("");
+    rosterFileInputRef.current?.click();
+  };
+
+  const handleRosterImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setRosterImporting(true);
+    setError("");
+    setRosterImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/admin/import-roster", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error ?? "นำเข้าไฟล์ไม่สำเร็จ");
+        return;
+      }
+      setRosterImportResult({
+        totalRows: data.totalRows,
+        createdCount: data.createdCount,
+        updatedCount: data.updatedCount,
+        skipped: data.skipped ?? [],
+      });
+      fetchRows(search);
+    } catch {
+      setError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+    } finally {
+      setRosterImporting(false);
     }
   };
 
@@ -277,28 +333,6 @@ export function AdminTable() {
               <ArrowLeft className="h-4 w-4" />
               กลับหน้าแรก
             </Link>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx"
-              className="hidden"
-              onChange={handleImportFileChange}
-            />
-            <button
-              onClick={handleDownloadTemplate}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
-            >
-              <FileSpreadsheet className="h-4 w-4" />
-              เทมเพลต
-            </button>
-            <button
-              onClick={handleImportClick}
-              disabled={importing}
-              className="flex items-center gap-1.5 rounded-lg border border-wuh-200 px-3 py-2 text-sm font-medium text-wuh-800 transition hover:bg-wuh-50 disabled:opacity-60"
-            >
-              {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              นำเข้าข้อมูล
-            </button>
             <button
               onClick={handleExportAll}
               disabled={exporting}
@@ -336,6 +370,76 @@ export function AdminTable() {
           </div>
         </div>
 
+        <div className="mb-5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              นำเข้ารายชื่อใหม่ (สร้างทะเบียนใหม่)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <input
+                ref={rosterFileInputRef}
+                type="file"
+                accept=".xlsx"
+                className="hidden"
+                onChange={handleRosterImportFileChange}
+              />
+              <button
+                onClick={handleDownloadRosterTemplate}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                เทมเพลต
+              </button>
+              <button
+                onClick={handleRosterImportClick}
+                disabled={rosterImporting}
+                className="flex items-center gap-1.5 rounded-lg border border-wuh-200 px-3 py-1.5 text-xs font-medium text-wuh-800 transition hover:bg-wuh-50 disabled:opacity-60"
+              >
+                {rosterImporting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Upload className="h-3.5 w-3.5" />
+                )}
+                นำเข้าไฟล์
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              ซิงก์กับระบบประตู (อัปเดตของเดิมเท่านั้น)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <input
+                ref={gateFileInputRef}
+                type="file"
+                accept=".xlsx"
+                className="hidden"
+                onChange={handleGateImportFileChange}
+              />
+              <button
+                onClick={handleDownloadGateTemplate}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                เทมเพลต
+              </button>
+              <button
+                onClick={handleGateImportClick}
+                disabled={gateImporting}
+                className="flex items-center gap-1.5 rounded-lg border border-wuh-200 px-3 py-1.5 text-xs font-medium text-wuh-800 transition hover:bg-wuh-50 disabled:opacity-60"
+              >
+                {gateImporting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Upload className="h-3.5 w-3.5" />
+                )}
+                นำเข้าไฟล์
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="relative max-w-sm flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -366,26 +470,57 @@ export function AdminTable() {
           </div>
         )}
 
-        {importResult && (
+        {rosterImportResult && (
           <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800">
             <button
               type="button"
-              onClick={() => setImportResult(null)}
+              onClick={() => setRosterImportResult(null)}
               className="float-right text-emerald-600 hover:text-emerald-800"
               aria-label="ปิด"
             >
               <X className="h-4 w-4" />
             </button>
             <p className="font-medium">
-              นำเข้าสำเร็จ {importResult.updatedCount} จาก {importResult.totalRows} รายการ
+              นำเข้ารายชื่อ: สร้างใหม่ {rosterImportResult.createdCount} · อัปเดต{" "}
+              {rosterImportResult.updatedCount} จากทั้งหมด {rosterImportResult.totalRows} รายการ
             </p>
-            {importResult.skipped.length > 0 && (
+            {rosterImportResult.skipped.length > 0 && (
               <div className="mt-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
-                  ข้าม {importResult.skipped.length} รายการ:
+                  ข้าม {rosterImportResult.skipped.length} รายการ:
                 </p>
                 <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto text-xs text-emerald-700">
-                  {importResult.skipped.map((s, i) => (
+                  {rosterImportResult.skipped.map((s, i) => (
+                    <li key={i}>
+                      {s.plate} — {s.reason}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {gateImportResult && (
+          <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800">
+            <button
+              type="button"
+              onClick={() => setGateImportResult(null)}
+              className="float-right text-emerald-600 hover:text-emerald-800"
+              aria-label="ปิด"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <p className="font-medium">
+              ซิงก์ระบบประตูสำเร็จ {gateImportResult.updatedCount} จาก {gateImportResult.totalRows} รายการ
+            </p>
+            {gateImportResult.skipped.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
+                  ข้าม {gateImportResult.skipped.length} รายการ:
+                </p>
+                <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto text-xs text-emerald-700">
+                  {gateImportResult.skipped.map((s, i) => (
                     <li key={i}>
                       {s.plate} — {s.reason}
                     </li>

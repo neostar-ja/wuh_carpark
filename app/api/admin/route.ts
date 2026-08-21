@@ -4,6 +4,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase";
 import { statusUpdateSchema, deleteRegistrationSchema, updateRegistrationSchema } from "@/lib/validation";
 import { buildGateWorkbook, buildGateTemplateWorkbook } from "@/lib/gate-file";
+import { buildRosterTemplateWorkbook } from "@/lib/roster-file";
 import {
   ADMIN_SESSION_COOKIE,
   checkAdminPassword,
@@ -37,6 +38,16 @@ export async function GET(req: NextRequest) {
         headers: {
           "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           "Content-Disposition": 'attachment; filename="import_template.xlsx"',
+        },
+      });
+    }
+
+    if (action === "roster-template") {
+      return new NextResponse(new Uint8Array(buildRosterTemplateWorkbook()), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": 'attachment; filename="roster_template.xlsx"',
         },
       });
     }

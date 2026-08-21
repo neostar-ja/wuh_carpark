@@ -50,9 +50,12 @@ export const LICENSE_PLATE_TYPE_OPTIONS = [
 
 export const PROVINCE_OPTIONS = THAI_PROVINCES;
 
-export const LICENSE_PLATE_REGEX = /^[ก-ฮ]{1,3}[0-9]{1,4}$/;
+// Optional leading digit covers reissued plate series (e.g. "3กก1234"),
+// which real Thai plates use once a 2-letter combination has cycled through
+// once already — a plain [ก-ฮ]{1,3}[0-9]{1,4} rejected these.
+export const LICENSE_PLATE_REGEX = /^[0-9]?[ก-ฮ]{1,3}[0-9]{1,4}$/;
 export const FULL_NAME_EN_REGEX = /^[A-Za-z\s]+$/;
-const FULL_NAME_TH_REGEX = /^[฀-๿\s]+$/;
+export const FULL_NAME_TH_REGEX = /^[฀-๿\s]+$/;
 export const PHONE_REGEX = /^0[0-9]{9}$/;
 
 export const registrationSchema = z.object({
