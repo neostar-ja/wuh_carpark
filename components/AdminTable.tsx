@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -312,6 +312,23 @@ export function AdminTable() {
 
   const pendingCount = rows.filter((r) => r.status === "pending").length;
 
+  // How many rows share each username — an employee with more than one
+  // vehicle shares one username across all of their registrations, so a
+  // count greater than 1 means "this person has other cars".
+  const usernameCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const row of rows) {
+      if (!row.username) continue;
+      counts.set(row.username, (counts.get(row.username) ?? 0) + 1);
+    }
+    return counts;
+  }, [rows]);
+
+  const otherCarsForSelected = useMemo(() => {
+    if (!selected?.username) return [];
+    return rows.filter((r) => r.username === selected.username && r.id !== selected.id);
+  }, [rows, selected]);
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur-sm">
@@ -615,10 +632,17 @@ export function AdminTable() {
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-500">
                       {row.username ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-600">
-                          <AtSign className="h-3 w-3" />
-                          {row.username}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-600">
+                            <AtSign className="h-3 w-3" />
+                            {row.username}
+                          </span>
+                          {(usernameCounts.get(row.username) ?? 0) > 1 && (
+                            <span className="inline-flex items-center rounded-md bg-accent-100 px-1.5 py-0.5 text-xs font-medium text-accent-700">
+                              {usernameCounts.get(row.username)} คัน
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         "-"
                       )}
@@ -675,14 +699,29 @@ export function AdminTable() {
       {selected && (
         <RegistrationDetailModal
           registration={selected}
+          otherCars={otherCarsForSelected}
           onClose={() => setSelected(null)}
           onApprove={() => handleStatusChange(selected.id, "approved")}
           onReject={() => handleStatusChange(selected.id, "rejected")}
           onDelete={() => {
             setPendingDelete(selected);
           }}
-          onSaved={(updated) => {
-            setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+          onSelectOther={(car) => setSelected(car)}
+          onSaved={(updated, appliedToAll) => {
+            if (appliedToAll && updated.username) {
+              const { full_name_th, full_name_en, position, department, phone_number, username } = updated;
+              setRows((prev) =>
+                prev.map((r) =>
+                  r.username === username
+                    ? r.id === updated.id
+                      ? updated
+                      : { ...r, full_name_th, full_name_en, position, department, phone_number }
+                    : r
+                )
+              );
+            } else {
+              setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+            }
             setSelected(updated);
           }}
           busy={updatingId === selected.id}

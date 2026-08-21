@@ -80,15 +80,24 @@ export async function POST(req: NextRequest) {
 
       const selfId = existingByPlate?.id;
 
-      // A username collision (with a *different* row) gets resolved by
+      // A username collision only counts against a *different person* —
+      // an employee with more than one car is expected to reuse the same
+      // username across all of their registrations, matched by Thai name +
+      // phone. Only an actual different-person clash gets resolved by
       // appending a numeric suffix, truncating the requested username
-      // itself if it's already at the 10-character cap — "thirapo.ka"
-      // colliding becomes "thirapo.k2", not "thirapo.ka2" (11 chars).
+      // itself if it's already at the 10-character cap ("thirapo.ka"
+      // colliding becomes "thirapo.k2", not "thirapo.ka2" which is 11).
       const isUsernameTaken = async (candidate: string) => {
-        let q = supabaseAdmin.from("car_registrations").select("id").eq("username", candidate);
+        let q = supabaseAdmin
+          .from("car_registrations")
+          .select("id, full_name_th, phone_number")
+          .eq("username", candidate);
         if (selfId) q = q.neq("id", selfId);
-        const { data } = await q.maybeSingle();
-        return Boolean(data);
+        const { data } = await q;
+        if (!data || data.length === 0) return false;
+        return data.some(
+          (r) => r.full_name_th !== row.fullNameTh || r.phone_number !== row.phone
+        );
       };
 
       let resolvedUsername: string;

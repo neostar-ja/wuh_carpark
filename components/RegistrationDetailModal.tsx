@@ -22,6 +22,7 @@ import {
   Pencil,
   Loader2,
   Save,
+  Users,
 } from "lucide-react";
 import type { Registration } from "@/lib/types";
 import {
@@ -94,26 +95,31 @@ function EditField({
 
 type Props = {
   registration: Registration;
+  otherCars: Registration[];
   onClose: () => void;
   onApprove: () => void;
   onReject: () => void;
   onDelete: () => void;
-  onSaved: (updated: Registration) => void;
+  onSelectOther: (registration: Registration) => void;
+  onSaved: (updated: Registration, appliedToAll: boolean) => void;
   busy: boolean;
 };
 
 export function RegistrationDetailModal({
   registration,
+  otherCars,
   onClose,
   onApprove,
   onReject,
   onDelete,
+  onSelectOther,
   onSaved,
   busy,
 }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [applyToAll, setApplyToAll] = useState(false);
 
   const defaultValues: EditInput = {
     license_plate: registration.license_plate,
@@ -142,6 +148,7 @@ export function RegistrationDetailModal({
   const startEditing = () => {
     reset(defaultValues);
     setSaveError("");
+    setApplyToAll(false);
     setIsEditing(true);
   };
 
@@ -157,14 +164,18 @@ export function RegistrationDetailModal({
       const res = await fetch("/api/admin", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: registration.id, ...values }),
+        body: JSON.stringify({
+          id: registration.id,
+          ...values,
+          applyToAllWithUsername: applyToAll,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
         setSaveError(data.error ?? "บันทึกข้อมูลไม่สำเร็จ");
         return;
       }
-      onSaved({ ...registration, ...values });
+      onSaved({ ...registration, ...values }, applyToAll);
       setIsEditing(false);
     } catch {
       setSaveError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
@@ -199,11 +210,19 @@ export function RegistrationDetailModal({
               <p className="font-mono text-2xl font-bold tracking-wide">{registration.license_plate}</p>
             </div>
           </div>
-          <span
-            className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold ${STATUS_BADGE_CLASS[registration.status] ?? "bg-white/20 text-white"}`}
-          >
-            {STATUS_LABEL[registration.status] ?? registration.status}
-          </span>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${STATUS_BADGE_CLASS[registration.status] ?? "bg-white/20 text-white"}`}
+            >
+              {STATUS_LABEL[registration.status] ?? registration.status}
+            </span>
+            {otherCars.length > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+                <Users className="h-3 w-3" />
+                คนนี้มี {otherCars.length + 1} คัน
+              </span>
+            )}
+          </div>
         </div>
 
         {isEditing ? (
@@ -279,6 +298,23 @@ export function RegistrationDetailModal({
               </EditField>
             </div>
 
+            {otherCars.length > 0 && (
+              <label className="mx-6 mb-4 flex items-start gap-2.5 rounded-xl border border-wuh-100 bg-wuh-50/60 p-3 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={applyToAll}
+                  onChange={(e) => setApplyToAll(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-wuh-700 focus:ring-wuh-500"
+                />
+                <span>
+                  ใช้ ชื่อ ตำแหน่ง หน่วยงาน และเบอร์โทรนี้ กับรถอีก {otherCars.length} คันของคนนี้ด้วย
+                  <span className="block text-xs text-slate-500">
+                    (ทะเบียนรถ จังหวัด ประเภทรถ สี และประเภทป้าย จะไม่ถูกเปลี่ยน)
+                  </span>
+                </span>
+              </label>
+            )}
+
             {saveError && (
               <div className="mx-6 mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">
                 {saveError}
@@ -328,6 +364,32 @@ export function RegistrationDetailModal({
                 />
               </div>
             </div>
+
+            {otherCars.length > 0 && (
+              <div className="border-t border-slate-100 px-6 py-4">
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <Users className="h-3.5 w-3.5" />
+                  รถคันอื่นของคนนี้ ({otherCars.length})
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {otherCars.map((car) => (
+                    <button
+                      key={car.id}
+                      type="button"
+                      onClick={() => onSelectOther(car)}
+                      className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-left text-sm transition hover:border-wuh-300 hover:bg-wuh-50/60"
+                    >
+                      <span className="font-mono font-medium text-slate-800">{car.license_plate}</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_CLASS[car.status] ?? "bg-slate-100 text-slate-700"}`}
+                      >
+                        {STATUS_LABEL[car.status] ?? car.status}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-2.5 border-t border-slate-100 p-6 pt-5">
               <button

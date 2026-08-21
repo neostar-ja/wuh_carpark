@@ -131,14 +131,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const username = await generateUsername(registration.full_name_en, async (candidate) => {
-      const { data } = await supabaseAdmin
-        .from("car_registrations")
-        .select("id")
-        .eq("username", candidate)
-        .maybeSingle();
-      return Boolean(data);
-    });
+    // An employee with more than one vehicle shares one username across all
+    // of their registrations — "same person" is matched by Thai name +
+    // phone together, the same pair check-status already uses to prove
+    // ownership. Only generate a fresh username when no such person exists
+    // yet.
+    const { data: existingPerson } = await supabaseAdmin
+      .from("car_registrations")
+      .select("username")
+      .eq("full_name_th", registration.full_name_th)
+      .eq("phone_number", registration.phone_number)
+      .not("username", "is", null)
+      .limit(1)
+      .maybeSingle();
+
+    const username =
+      existingPerson?.username ??
+      (await generateUsername(registration.full_name_en, async (candidate) => {
+        const { data } = await supabaseAdmin
+          .from("car_registrations")
+          .select("id")
+          .eq("username", candidate)
+          .maybeSingle();
+        return Boolean(data);
+      }));
 
     const { data: inserted, error: insertError } = await supabaseAdmin
       .from("car_registrations")
@@ -159,17 +175,10 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertError || !inserted) {
-      // Unique-constraint race: two requests landed at once. Distinguish
-      // which column collided so the message stays accurate — a username
-      // race (two people, same generated code, same instant) is rare but
-      // shouldn't be reported to the user as a duplicate license plate.
+      // Unique-constraint race: two requests for the same plate landed at
+      // once (username no longer has a unique constraint, so this can only
+      // be the plate now).
       if (insertError?.code === "23505") {
-        if (insertError.message?.includes("username")) {
-          return NextResponse.json(
-            { success: false, error: "เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง" },
-            { status: 409 }
-          );
-        }
         return NextResponse.json(
           { success: false, error: "ทะเบียนนี้ลงทะเบียนแล้ว" },
           { status: 409 }

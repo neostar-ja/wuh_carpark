@@ -246,6 +246,12 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    // Not part of the shared registration schema (that mirrors the public
+    // form 1:1) — this flag only exists in the admin edit flow.
+    const applyToAllWithUsername = Boolean(
+      (json as { applyToAllWithUsername?: unknown }).applyToAllWithUsername
+    );
+
     const { id, ...fields } = parsed.data;
 
     // A duplicate plate check that excludes this row itself, since editing
@@ -287,6 +293,35 @@ export async function PUT(req: NextRequest) {
         { success: false, error: "บันทึกข้อมูลไม่สำเร็จ" },
         { status: 500 }
       );
+    }
+
+    // "Apply to all this person's cars" — username isn't part of this form
+    // (it's assigned automatically, never hand-edited), so it's unchanged by
+    // the update above and still identifies which other rows are this same
+    // person's other vehicles. Only the person-level fields propagate;
+    // vehicle-level fields (plate, province, car type/color, plate type)
+    // stay row-specific.
+    if (applyToAllWithUsername) {
+      const { data: selfRow } = await supabaseAdmin
+        .from("car_registrations")
+        .select("username")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (selfRow?.username) {
+        await supabaseAdmin
+          .from("car_registrations")
+          .update({
+            full_name_th: fields.full_name_th,
+            full_name_en: fields.full_name_en,
+            position: fields.position,
+            department: fields.department,
+            phone_number: fields.phone_number,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("username", selfRow.username)
+          .neq("id", id);
+      }
     }
 
     return NextResponse.json({ success: true });
