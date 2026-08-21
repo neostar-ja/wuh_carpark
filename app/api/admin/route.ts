@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase";
 import { statusUpdateSchema, deleteRegistrationSchema, updateRegistrationSchema } from "@/lib/validation";
+import { buildGateWorkbook } from "@/lib/gate-file";
 import {
   ADMIN_SESSION_COOKIE,
   checkAdminPassword,
@@ -17,30 +18,6 @@ function isAuthenticated(): boolean {
 
 function unauthorized() {
   return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-}
-
-function toCsvValue(value: string): string {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
-// Forces Excel to treat the value as text instead of a number, so a phone
-// number like "0899999999" keeps its leading zero instead of Excel
-// silently reading it as 899999999.
-function toCsvExcelText(value: string): string {
-  return toCsvValue(`="${value}"`);
-}
-
-// "YYYY-MM-DD" in Asia/Bangkok, optionally shifted forward by whole years —
-// used for the gate-system import's Start Time / End Time columns.
-function formatBangkokDate(isoDate: string, addYears = 0): string {
-  const [y, m, d] = new Date(isoDate)
-    .toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" })
-    .split("-")
-    .map(Number);
-  return new Date(Date.UTC(y + addYears, m - 1, d)).toISOString().slice(0, 10);
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -107,39 +84,13 @@ export async function GET(req: NextRequest) {
         for (const row of exportRows) row.status = "approved";
       }
 
-      const header = [
-        "Number Plate",
-        "Name",
-        "Phone",
-        "Description",
-        "Vehicle Type",
-        "Vehicle Color",
-        "License Plate Type",
-        "Start Time",
-        "End Time",
-      ];
-      const rows = exportRows.map((row) => {
-        const startTime = formatBangkokDate(row.created_at);
-        const endTime = formatBangkokDate(row.created_at, 7);
-        return [
-          toCsvValue(row.license_plate ?? ""),
-          toCsvValue(row.username || row.full_name_en || ""),
-          toCsvExcelText(row.phone_number ?? ""),
-          toCsvValue(row.full_name_en ?? ""),
-          toCsvValue(row.car_type ?? ""),
-          toCsvValue(row.car_color ?? ""),
-          toCsvValue(row.license_plate_type ?? ""),
-          toCsvValue(startTime),
-          toCsvValue(endTime),
-        ].join(",");
-      });
-      const csv = [header.join(","), ...rows].join("\n");
+      const workbookBuffer = buildGateWorkbook(exportRows);
 
-      return new NextResponse(`﻿${csv}`, {
+      return new NextResponse(new Uint8Array(workbookBuffer), {
         status: 200,
         headers: {
-          "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="car_registrations_${Date.now()}.csv"`,
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": `attachment; filename="car_registrations_${Date.now()}.xlsx"`,
         },
       });
     }

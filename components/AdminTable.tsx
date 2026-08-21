@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Search,
   Download,
+  Upload,
   LogOut,
   Check,
   X,
@@ -21,6 +22,12 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { RegistrationDetailModal } from "./RegistrationDetailModal";
 import { Footer } from "./Footer";
 
+type ImportResult = {
+  totalRows: number;
+  updatedCount: number;
+  skipped: { plate: string; reason: string }[];
+};
+
 const STATUS_LABEL: Record<string, string> = {
   pending: "รอดำเนินการ",
   approved: "อนุมัติแล้ว",
@@ -33,7 +40,7 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
   rejected: "bg-red-100 text-red-700",
 };
 
-async function downloadCsv(url: string, filename: string): Promise<{ error?: string }> {
+async function downloadFile(url: string, filename: string): Promise<{ error?: string }> {
   const res = await fetch(url);
   if (!res.ok) {
     const data = await res.json().catch(() => null);
@@ -61,6 +68,9 @@ export function AdminTable() {
   const [deleting, setDeleting] = useState(false);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchRows = useCallback(
     async (searchTerm: string) => {
@@ -172,9 +182,9 @@ export function AdminTable() {
   const handleExportAll = async () => {
     setExporting(true);
     setError("");
-    const { error: err } = await downloadCsv(
+    const { error: err } = await downloadFile(
       "/api/admin?action=export",
-      `car_registrations_all_${Date.now()}.csv`
+      `car_registrations_all_${Date.now()}.xlsx`
     );
     if (err) setError(err);
     setExporting(false);
@@ -185,9 +195,9 @@ export function AdminTable() {
     setExporting(true);
     setError("");
     const params = new URLSearchParams({ action: "export", ids: Array.from(checkedIds).join(",") });
-    const { error: err } = await downloadCsv(
+    const { error: err } = await downloadFile(
       `/api/admin?${params.toString()}`,
-      `car_registrations_selected_${Date.now()}.csv`
+      `car_registrations_selected_${Date.now()}.xlsx`
     );
     if (err) {
       setError(err);
@@ -197,6 +207,42 @@ export function AdminTable() {
       fetchRows(search);
     }
     setExporting(false);
+  };
+
+  const handleImportClick = () => {
+    setImportResult(null);
+    setError("");
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file next time
+    if (!file) return;
+
+    setImporting(true);
+    setError("");
+    setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/admin/import", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error ?? "นำเข้าไฟล์ไม่สำเร็จ");
+        return;
+      }
+      setImportResult({
+        totalRows: data.totalRows,
+        updatedCount: data.updatedCount,
+        skipped: data.skipped ?? [],
+      });
+      fetchRows(search);
+    } catch {
+      setError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+    } finally {
+      setImporting(false);
+    }
   };
 
   const pendingCount = rows.filter((r) => r.status === "pending").length;
@@ -224,6 +270,21 @@ export function AdminTable() {
               <ArrowLeft className="h-4 w-4" />
               กลับหน้าแรก
             </Link>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx"
+              className="hidden"
+              onChange={handleImportFileChange}
+            />
+            <button
+              onClick={handleImportClick}
+              disabled={importing}
+              className="flex items-center gap-1.5 rounded-lg border border-wuh-200 px-3 py-2 text-sm font-medium text-wuh-800 transition hover:bg-wuh-50 disabled:opacity-60"
+            >
+              {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              นำเข้าข้อมูล
+            </button>
             <button
               onClick={handleExportAll}
               disabled={exporting}
@@ -288,6 +349,36 @@ export function AdminTable() {
         {error && (
           <div className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {importResult && (
+          <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800">
+            <button
+              type="button"
+              onClick={() => setImportResult(null)}
+              className="float-right text-emerald-600 hover:text-emerald-800"
+              aria-label="ปิด"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <p className="font-medium">
+              นำเข้าสำเร็จ {importResult.updatedCount} จาก {importResult.totalRows} รายการ
+            </p>
+            {importResult.skipped.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
+                  ข้าม {importResult.skipped.length} รายการ:
+                </p>
+                <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto text-xs text-emerald-700">
+                  {importResult.skipped.map((s, i) => (
+                    <li key={i}>
+                      {s.plate} — {s.reason}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 

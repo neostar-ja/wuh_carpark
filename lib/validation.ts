@@ -50,10 +50,10 @@ export const LICENSE_PLATE_TYPE_OPTIONS = [
 
 export const PROVINCE_OPTIONS = THAI_PROVINCES;
 
-const LICENSE_PLATE_REGEX = /^[ก-ฮ]{1,3}[0-9]{1,4}$/;
-const FULL_NAME_EN_REGEX = /^[A-Za-z\s]+$/;
+export const LICENSE_PLATE_REGEX = /^[ก-ฮ]{1,3}[0-9]{1,4}$/;
+export const FULL_NAME_EN_REGEX = /^[A-Za-z\s]+$/;
 const FULL_NAME_TH_REGEX = /^[฀-๿\s]+$/;
-const PHONE_REGEX = /^0[0-9]{9}$/;
+export const PHONE_REGEX = /^0[0-9]{9}$/;
 
 export const registrationSchema = z.object({
   license_plate: z
