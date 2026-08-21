@@ -87,6 +87,40 @@ export function buildGateWorkbook(rows: GateExportRow[]): Buffer {
   return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
 }
 
+// A downloadable starting point for admins preparing an import file by hand
+// — same exact header, plus one clearly-a-sample row demonstrating the
+// literal strings the importer accepts (Vehicle Type/Color/License Plate
+// Type must match one of the app's own dropdown options exactly, not just
+// look similar) and the D/M/YYYY date format.
+export function buildGateTemplateWorkbook(): Buffer {
+  const now = new Date().toISOString();
+  const aoa: string[][] = [
+    [...GATE_HEADER],
+    [
+      "กข1234",
+      "somchai.ja",
+      "0812345678",
+      "Somchai Jaidee",
+      CAR_TYPE_OPTIONS[0],
+      CAR_COLOR_OPTIONS[0],
+      LICENSE_PLATE_TYPE_OPTIONS[0],
+      formatGateDate(now),
+      formatGateDate(now, 7),
+    ],
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+  const phoneCell = worksheet[XLSX.utils.encode_cell({ r: 1, c: GATE_HEADER.indexOf("Phone") })];
+  if (phoneCell) {
+    phoneCell.t = "s";
+    phoneCell.z = "@";
+  }
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Registrations");
+  return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
+}
+
 export type GateImportRow = {
   licensePlate: string;
   phone: string;

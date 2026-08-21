@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase";
 import { statusUpdateSchema, deleteRegistrationSchema, updateRegistrationSchema } from "@/lib/validation";
-import { buildGateWorkbook } from "@/lib/gate-file";
+import { buildGateWorkbook, buildGateTemplateWorkbook } from "@/lib/gate-file";
 import {
   ADMIN_SESSION_COOKIE,
   checkAdminPassword,
@@ -30,6 +30,17 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search")?.trim() ?? "";
     const action = searchParams.get("action");
+
+    if (action === "template") {
+      return new NextResponse(new Uint8Array(buildGateTemplateWorkbook()), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": 'attachment; filename="import_template.xlsx"',
+        },
+      });
+    }
+
     const idsParam = searchParams.get("ids");
     const selectedIds = idsParam
       ? idsParam.split(",").map((s) => s.trim()).filter((s) => UUID_RE.test(s))

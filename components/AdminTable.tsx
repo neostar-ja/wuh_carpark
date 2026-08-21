@@ -7,6 +7,7 @@ import {
   Search,
   Download,
   Upload,
+  FileSpreadsheet,
   LogOut,
   Check,
   X,
@@ -209,6 +210,12 @@ export function AdminTable() {
     setExporting(false);
   };
 
+  const handleDownloadTemplate = async () => {
+    setError("");
+    const { error: err } = await downloadFile("/api/admin?action=template", "import_template.xlsx");
+    if (err) setError(err);
+  };
+
   const handleImportClick = () => {
     setImportResult(null);
     setError("");
@@ -277,6 +284,13 @@ export function AdminTable() {
               className="hidden"
               onChange={handleImportFileChange}
             />
+            <button
+              onClick={handleDownloadTemplate}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              เทมเพลต
+            </button>
             <button
               onClick={handleImportClick}
               disabled={importing}
