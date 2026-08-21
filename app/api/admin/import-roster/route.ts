@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from "@/lib/admin-auth";
+import { makeUniqueUsername } from "@/lib/username";
 import {
   parseRosterWorkbook,
   validateRosterRow,
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
     let createdCount = 0;
     let updatedCount = 0;
     const skipped: { plate: string; reason: string }[] = [];
+    const renamed: { plate: string; from: string; to: string }[] = [];
 
     for (const row of importRows) {
       const fieldErrors = validateRosterRow(row);
@@ -76,26 +78,34 @@ export async function POST(req: NextRequest) {
         .eq("license_plate", row.licensePlate)
         .maybeSingle();
 
-      const { data: existingByUsername } = await supabaseAdmin
-        .from("car_registrations")
-        .select("id")
-        .eq("username", row.username)
-        .maybeSingle();
+      const selfId = existingByPlate?.id;
 
-      const usernameTakenByAnotherRow =
-        existingByUsername && existingByUsername.id !== existingByPlate?.id;
+      // A username collision (with a *different* row) gets resolved by
+      // appending a numeric suffix, truncating the requested username
+      // itself if it's already at the 10-character cap — "thirapo.ka"
+      // colliding becomes "thirapo.k2", not "thirapo.ka2" (11 chars).
+      const isUsernameTaken = async (candidate: string) => {
+        let q = supabaseAdmin.from("car_registrations").select("id").eq("username", candidate);
+        if (selfId) q = q.neq("id", selfId);
+        const { data } = await q.maybeSingle();
+        return Boolean(data);
+      };
+
+      let resolvedUsername: string;
+      try {
+        resolvedUsername = await makeUniqueUsername(row.username, isUsernameTaken);
+      } catch {
+        skipped.push({ plate: row.licensePlate, reason: "ไม่สามารถหา Username ที่ไม่ซ้ำได้" });
+        continue;
+      }
 
       if (existingByPlate) {
-        // Update: keep the existing username if the requested one collides
-        // with a *different* row, rather than failing the whole row.
-        const nextUsername = usernameTakenByAnotherRow ? existingByPlate.username : row.username;
-
         const { error } = await supabaseAdmin
           .from("car_registrations")
           .update({
             province: row.province,
             full_name_th: row.fullNameTh,
-            username: nextUsername,
+            username: resolvedUsername,
             position: row.position,
             department: row.department,
             phone_number: row.phone,
@@ -110,16 +120,11 @@ export async function POST(req: NextRequest) {
         }
         updatedCount++;
       } else {
-        if (usernameTakenByAnotherRow) {
-          skipped.push({ plate: row.licensePlate, reason: `Username "${row.username}" ถูกใช้งานแล้ว` });
-          continue;
-        }
-
         const { error } = await supabaseAdmin.from("car_registrations").insert({
           license_plate: row.licensePlate,
           province: row.province,
           full_name_th: row.fullNameTh,
-          username: row.username,
+          username: resolvedUsername,
           position: row.position,
           department: row.department,
           phone_number: row.phone,
@@ -131,11 +136,15 @@ export async function POST(req: NextRequest) {
         });
 
         if (error) {
-          const reason = error.code === "23505" ? "ทะเบียนหรือ Username ซ้ำ" : "บันทึกไม่สำเร็จ";
+          const reason = error.code === "23505" ? "ทะเบียนซ้ำ" : "บันทึกไม่สำเร็จ";
           skipped.push({ plate: row.licensePlate, reason });
           continue;
         }
         createdCount++;
+      }
+
+      if (resolvedUsername !== row.username) {
+        renamed.push({ plate: row.licensePlate, from: row.username, to: resolvedUsername });
       }
     }
 
@@ -145,6 +154,7 @@ export async function POST(req: NextRequest) {
       createdCount,
       updatedCount,
       skipped,
+      renamed,
     });
   } catch (err) {
     console.error("POST /api/admin/import-roster failed:", err);

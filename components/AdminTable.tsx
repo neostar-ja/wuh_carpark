@@ -34,6 +34,7 @@ type RosterImportResult = {
   createdCount: number;
   updatedCount: number;
   skipped: { plate: string; reason: string }[];
+  renamed: { plate: string; from: string; to: string }[];
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -299,6 +300,7 @@ export function AdminTable() {
         createdCount: data.createdCount,
         updatedCount: data.updatedCount,
         skipped: data.skipped ?? [],
+        renamed: data.renamed ?? [],
       });
       fetchRows(search);
     } catch {
@@ -484,6 +486,20 @@ export function AdminTable() {
               นำเข้ารายชื่อ: สร้างใหม่ {rosterImportResult.createdCount} · อัปเดต{" "}
               {rosterImportResult.updatedCount} จากทั้งหมด {rosterImportResult.totalRows} รายการ
             </p>
+            {rosterImportResult.renamed.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
+                  ปรับ Username ให้ไม่ซ้ำ {rosterImportResult.renamed.length} รายการ:
+                </p>
+                <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto text-xs text-emerald-700">
+                  {rosterImportResult.renamed.map((r, i) => (
+                    <li key={i}>
+                      {r.plate}: {r.from} → {r.to}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {rosterImportResult.skipped.length > 0 && (
               <div className="mt-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
