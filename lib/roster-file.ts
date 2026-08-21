@@ -2,32 +2,51 @@ import "server-only";
 import * as XLSX from "xlsx";
 import {
   CAR_TYPE_OPTIONS,
+  CAR_COLOR_OPTIONS,
+  LICENSE_PLATE_TYPE_OPTIONS,
   PROVINCE_OPTIONS,
   LICENSE_PLATE_REGEX,
   FULL_NAME_TH_REGEX,
+  FULL_NAME_EN_REGEX,
   PHONE_REGEX,
 } from "./validation";
 
 // Header for the "bulk roster" import/template — this is our own native
-// field set (mirrors the admin table's columns), separate from the
-// gate-system xlsx format in lib/gate-file.ts. Used to bulk-create
-// registrations (e.g. from an HR-prepared staff list) rather than to
-// resync with an external system.
+// field set, mirroring the public registration form itself (minus consent,
+// which only ever applies at submission time) rather than the gate-system
+// xlsx format in lib/gate-file.ts. Used to bulk-create registrations (e.g.
+// from an HR-prepared staff list) rather than to resync with an external
+// system. There is deliberately no Username column — the system generates
+// it the same way the public form does (see lib/username.ts), reusing an
+// existing person's username when they already have another car registered.
 export const ROSTER_HEADER = [
   "ทะเบียนรถ",
   "จังหวัด",
-  "ชื่อ-นามสกุล",
-  "Username",
+  "ชื่อ-นามสกุล (ไทย)",
+  "ชื่อ-นามสกุล (อังกฤษ)",
   "ตำแหน่ง",
   "หน่วยงาน",
   "เบอร์โทร",
   "ประเภทรถ",
+  "สีรถ",
+  "ประเภทป้ายทะเบียน",
 ] as const;
 
 export function buildRosterTemplateWorkbook(): Buffer {
   const aoa: string[][] = [
     [...ROSTER_HEADER],
-    ["กข1234", "นครศรีธรรมราช", "สมชาย ใจดี", "somchai.ja", "พยาบาลวิชาชีพ", "แผนกผู้ป่วยนอก", "0812345678", CAR_TYPE_OPTIONS[0]],
+    [
+      "กข1234",
+      "นครศรีธรรมราช",
+      "สมชาย ใจดี",
+      "Somchai Jaidee",
+      "พยาบาลวิชาชีพ",
+      "แผนกผู้ป่วยนอก",
+      "0812345678",
+      CAR_TYPE_OPTIONS[0],
+      CAR_COLOR_OPTIONS[0],
+      LICENSE_PLATE_TYPE_OPTIONS[0],
+    ],
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(aoa);
@@ -47,11 +66,13 @@ export type RosterImportRow = {
   licensePlate: string;
   province: string;
   fullNameTh: string;
-  username: string;
+  fullNameEn: string;
   position: string;
   department: string;
   phone: string;
   carType: string;
+  carColor: string;
+  licensePlateType: string;
 };
 
 export class RosterFileParseError extends Error {}
@@ -81,12 +102,14 @@ export function parseRosterWorkbook(buffer: ArrayBuffer): RosterImportRow[] {
 
   const idxPlate = colIndex("ทะเบียนรถ");
   const idxProvince = colIndex("จังหวัด");
-  const idxName = colIndex("ชื่อ-นามสกุล");
-  const idxUsername = colIndex("Username");
+  const idxNameTh = colIndex("ชื่อ-นามสกุล (ไทย)");
+  const idxNameEn = colIndex("ชื่อ-นามสกุล (อังกฤษ)");
   const idxPosition = colIndex("ตำแหน่ง");
   const idxDept = colIndex("หน่วยงาน");
   const idxPhone = colIndex("เบอร์โทร");
   const idxCarType = colIndex("ประเภทรถ");
+  const idxCarColor = colIndex("สีรถ");
+  const idxPlateType = colIndex("ประเภทป้ายทะเบียน");
 
   if (idxPlate === -1) {
     throw new RosterFileParseError('ไม่พบคอลัมน์ "ทะเบียนรถ" ในไฟล์ — กรุณาใช้ไฟล์รูปแบบเดียวกับเทมเพลต');
@@ -99,12 +122,14 @@ export function parseRosterWorkbook(buffer: ArrayBuffer): RosterImportRow[] {
     .map((row) => ({
       licensePlate: cell(row, idxPlate).replace(/\s+/g, ""),
       province: cell(row, idxProvince),
-      fullNameTh: cell(row, idxName),
-      username: cell(row, idxUsername),
+      fullNameTh: cell(row, idxNameTh),
+      fullNameEn: cell(row, idxNameEn),
       position: cell(row, idxPosition),
       department: cell(row, idxDept),
       phone: cell(row, idxPhone),
       carType: cell(row, idxCarType),
+      carColor: cell(row, idxCarColor),
+      licensePlateType: cell(row, idxPlateType),
     }))
     .filter((row) => row.licensePlate);
 }
@@ -114,7 +139,8 @@ export type RosterFieldError = { field: string; reason: string };
 // Full validation for a roster row — every field must be present and valid,
 // since (unlike the gate-system re-import) this can create a brand new
 // registration and there's no existing row to fall back on for anything
-// missing.
+// missing. Mirrors registrationSchema's rules (minus consent, and minus
+// username which the system generates itself).
 export function validateRosterRow(row: RosterImportRow): RosterFieldError[] {
   const errors: RosterFieldError[] = [];
 
@@ -125,12 +151,10 @@ export function validateRosterRow(row: RosterImportRow): RosterFieldError[] {
     errors.push({ field: "จังหวัด", reason: "ไม่ตรงกับรายชื่อจังหวัดที่ระบบรองรับ" });
   }
   if (!row.fullNameTh || !FULL_NAME_TH_REGEX.test(row.fullNameTh)) {
-    errors.push({ field: "ชื่อ-นามสกุล", reason: "ต้องเป็นภาษาไทยและไม่ว่าง" });
+    errors.push({ field: "ชื่อ-นามสกุล (ไทย)", reason: "ต้องเป็นภาษาไทยและไม่ว่าง" });
   }
-  if (!row.username) {
-    errors.push({ field: "Username", reason: "ห้ามว่าง" });
-  } else if (row.username.length > 10) {
-    errors.push({ field: "Username", reason: "ต้องไม่เกิน 10 ตัวอักษร" });
+  if (!row.fullNameEn || !FULL_NAME_EN_REGEX.test(row.fullNameEn)) {
+    errors.push({ field: "ชื่อ-นามสกุล (อังกฤษ)", reason: "ต้องเป็นภาษาอังกฤษและไม่ว่าง" });
   }
   if (!row.position) {
     errors.push({ field: "ตำแหน่ง", reason: "ห้ามว่าง" });
@@ -144,15 +168,12 @@ export function validateRosterRow(row: RosterImportRow): RosterFieldError[] {
   if (!(CAR_TYPE_OPTIONS as readonly string[]).includes(row.carType)) {
     errors.push({ field: "ประเภทรถ", reason: "ไม่ตรงกับตัวเลือกที่ระบบรองรับ" });
   }
+  if (!(CAR_COLOR_OPTIONS as readonly string[]).includes(row.carColor)) {
+    errors.push({ field: "สีรถ", reason: "ไม่ตรงกับตัวเลือกที่ระบบรองรับ" });
+  }
+  if (!(LICENSE_PLATE_TYPE_OPTIONS as readonly string[]).includes(row.licensePlateType)) {
+    errors.push({ field: "ประเภทป้ายทะเบียน", reason: "ไม่ตรงกับตัวเลือกที่ระบบรองรับ" });
+  }
 
   return errors;
 }
-
-// Fields our schema requires but this roster format doesn't carry — a
-// clearly-a-placeholder value for each, only ever used when *creating* a
-// brand new row (an update to an existing row leaves these untouched).
-export const ROSTER_DEFAULTS = {
-  full_name_en: "Unknown",
-  car_color: "Other",
-  license_plate_type: "ป้ายขาว-ดำ",
-} as const;

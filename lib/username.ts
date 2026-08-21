@@ -53,27 +53,3 @@ export async function generateUsername(
   // Astronomically unlikely, but keep the function total.
   throw new Error("Could not generate a unique username");
 }
-
-/**
- * Resolves a collision on an *admin-supplied* username (e.g. from the
- * roster import, where the file already specifies a username rather than
- * asking us to derive one) by appending a numeric suffix — truncating the
- * base itself if it's already at the 10-character cap, so "thirapo.ka"
- * (10 chars) colliding becomes "thirapo.k2" (still 10 chars), not
- * "thirapo.ka2" (11, over the limit).
- */
-export async function makeUniqueUsername(
-  base: string,
-  isTaken: (candidate: string) => Promise<boolean>
-): Promise<string> {
-  if (!(await isTaken(base))) return base;
-
-  for (let n = 2; n < 1000; n++) {
-    const suffix = String(n);
-    const maxBaseLength = Math.max(MAX_USERNAME_LENGTH - suffix.length, 1);
-    const candidate = base.slice(0, maxBaseLength) + suffix;
-    if (!(await isTaken(candidate))) return candidate;
-  }
-
-  throw new Error("Could not generate a unique username");
-}

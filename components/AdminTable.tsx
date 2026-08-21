@@ -17,6 +17,8 @@ import {
   AtSign,
   FileCheck2,
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type { Registration } from "@/lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -34,7 +36,6 @@ type RosterImportResult = {
   createdCount: number;
   updatedCount: number;
   skipped: { plate: string; reason: string }[];
-  renamed: { plate: string; from: string; to: string }[];
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -83,6 +84,8 @@ export function AdminTable() {
   const [rosterImporting, setRosterImporting] = useState(false);
   const [rosterImportResult, setRosterImportResult] = useState<RosterImportResult | null>(null);
   const rosterFileInputRef = useRef<HTMLInputElement>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 25;
 
   const fetchRows = useCallback(
     async (searchTerm: string) => {
@@ -112,9 +115,20 @@ export function AdminTable() {
   );
 
   useEffect(() => {
+    setPage(1);
     const timeout = setTimeout(() => fetchRows(search), 300);
     return () => clearTimeout(timeout);
   }, [search, fetchRows]);
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+
+  // Clamp back onto the last valid page if e.g. a delete shrinks the list
+  // out from under the page we were viewing.
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
+  const pagedRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Selection is a working set for export — drop anything no longer visible
   // in the current (possibly search-filtered) rows.
@@ -300,7 +314,6 @@ export function AdminTable() {
         createdCount: data.createdCount,
         updatedCount: data.updatedCount,
         skipped: data.skipped ?? [],
-        renamed: data.renamed ?? [],
       });
       fetchRows(search);
     } catch {
@@ -503,20 +516,6 @@ export function AdminTable() {
               นำเข้ารายชื่อ: สร้างใหม่ {rosterImportResult.createdCount} · อัปเดต{" "}
               {rosterImportResult.updatedCount} จากทั้งหมด {rosterImportResult.totalRows} รายการ
             </p>
-            {rosterImportResult.renamed.length > 0 && (
-              <div className="mt-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
-                  ปรับ Username ให้ไม่ซ้ำ {rosterImportResult.renamed.length} รายการ:
-                </p>
-                <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto text-xs text-emerald-700">
-                  {rosterImportResult.renamed.map((r, i) => (
-                    <li key={i}>
-                      {r.plate}: {r.from} → {r.to}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
             {rosterImportResult.skipped.length > 0 && (
               <div className="mt-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
@@ -607,7 +606,7 @@ export function AdminTable() {
                 </tr>
               )}
               {!loading &&
-                rows.map((row) => (
+                pagedRows.map((row) => (
                   <tr
                     key={row.id}
                     onClick={() => setSelected(row)}
@@ -692,6 +691,36 @@ export function AdminTable() {
             </tbody>
           </table>
         </div>
+
+        {!loading && rows.length > 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
+            <p>
+              แสดง {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, rows.length)} จาก{" "}
+              {rows.length} รายการ
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 font-medium text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                ก่อนหน้า
+              </button>
+              <span className="px-1 text-slate-600">
+                หน้า {page} / {pageCount}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                disabled={page >= pageCount}
+                className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 font-medium text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ถัดไป
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Footer />
