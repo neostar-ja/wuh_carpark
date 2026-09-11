@@ -64,11 +64,24 @@ or write this table directly; all access goes through the API routes.
 
 ## Local development
 
+Use Node.js 22 (also configured for Vercel in `package.json`).
+
 ```bash
+nvm use
 npm install
 cp .env.local.example .env.local   # fill in real values
 npm run dev
 ```
+
+## Status lookup outage
+
+If `/api/check-status` returns 503, check that the Supabase project is active
+and that the host in `NEXT_PUBLIC_SUPABASE_URL` resolves in DNS. A paused
+project must be restored in the Supabase dashboard; redeploying Vercel does
+not restore the database. Confirm the URL and service role key in Vercel's
+Production environment match the active project, then redeploy if changed.
+The route logs the database error code and HTTP status without lookup values.
+Transport failures have status `0`; requests time out after eight seconds.
 
 ## Notes / known limitations (documented, not hidden)
 
