@@ -73,6 +73,12 @@ cp .env.local.example .env.local   # fill in real values
 npm run dev
 ```
 
+## Supabase keepalive (Vercel Cron)
+
+To prevent Supabase Free Tier from pausing after 7 days of inactivity, a daily Vercel Cron Job is configured in `vercel.json` invoking `/api/cron/keepalive` daily at 02:00 UTC (09:00 AM ICT). It executes a minimal query (`SELECT id FROM car_registrations LIMIT 1`) to keep the project active.
+
+Optional: Set `CRON_SECRET` in **Vercel → Project → Settings → Environment Variables** to protect the endpoint from unauthorized external calls (Vercel automatically sends this secret in the `Authorization: Bearer <CRON_SECRET>` header).
+
 ## Status lookup outage
 
 If `/api/check-status` returns 503, check that the Supabase project is active
